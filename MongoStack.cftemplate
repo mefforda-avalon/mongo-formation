@@ -1,5 +1,5 @@
 {
-    "AWSTemplateFormatVersion" : "2014-05-21",
+    "AWSTemplateFormatVersion" : "2010-09-09",
 
     "Description" : "MongoDB Replica Set Stack 20140521-01",
 
@@ -13,6 +13,16 @@
             "Description" :"Name of this MessageService Cluster",
             "Type" : "String",
             "Default" : "MessageService"
+        },
+
+        "AccessKeyId" : {
+            "Description" : "Access Key ID",
+            "Type" : "String"
+        },
+
+        "SecretAccessKey" : {
+            "Description" : "Secret Access Key for the specified Access Key ID",
+            "Type" : "String"
         },
 
         "InstanceType" : {
@@ -31,8 +41,8 @@
         "VolumeType" : {
             "Description" : "EBS Volume type (Standard or Provisioned)",
             "AllowedValues": ["Standard","Provisioned"],
-            "Type" : "Number",
-            "Default" : "200"
+            "Type" : "String",
+            "Default" : "Provisioned"
         },
 
         "IopsPerVolume" : {
@@ -45,17 +55,17 @@
             "Description" : "Name for the MongoDB Replica Set",
             "Type" : "String",
             "Default" : "ReplicaSet"
-        }
+        },
 
         "SecurityGroupName" : {
             "Description" : "Name for the Security Group for this MongoDB Replica Set",
-            "Type" : "String",
-        }
+            "Type" : "String"
+        },
 
         "DAPITemplates" : {
             "Description" : "S3 Bucket containing the DAPI CloudFormation Templates",
             "Type" : "String",
-            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/",
+            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/"
         }
     },
 
@@ -104,15 +114,15 @@
         "ReplicaSetMember1" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL": { "FN::Join": ["", [{"Ref" : "DAPITemplates" },"MongoReplica.cftemplate"]]},
+                "TemplateURL": { "Fn::Join": ["", [{"Ref" : "DAPITemplates" },"MongoReplica.cftemplate"]]},
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
                     "VolumeSize" : { "Ref" : "VolumeSize" },
-                    "AccessKeyId" : { "Ref" : "AccessKey" },
-                    "SecretAccessKey" : {"Fn::GetAtt": ["AccessKey", "SecretAccessKey"]},
+                    "AccessKeyId"         : { "Ref" : "AccessKeyId" },
+                    "SecretAccessKey"     : { "Ref" : "SecretAccessKey" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
-                    "ServerName" : { "FN::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
+                    "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
                     "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
                     "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] }
                 }
@@ -122,15 +132,15 @@
         "ReplicaSetMember2" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL": { "FN::Join": ["", [{"Ref" : "DAPITemplates" },"MongoReplica.cftemplate"]]},
+                "TemplateURL": { "Fn::Join": ["", [{"Ref" : "DAPITemplates" },"MongoReplica.cftemplate"]]},
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
                     "VolumeSize" : { "Ref" : "VolumeSize" },
-                    "AccessKeyId" : { "Ref" : "AccessKey" },
-                    "SecretAccessKey" : {"Fn::GetAtt": ["AccessKey", "SecretAccessKey"]},
+                    "AccessKeyId"         : { "Ref" : "AccessKeyId" },
+                    "SecretAccessKey"     : { "Ref" : "SecretAccessKey" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
-                    "ServerName" : { "FN::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
+                    "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
                     "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
                     "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ3"] }
                 }
@@ -141,37 +151,30 @@
             "Type" : "AWS::CloudFormation::Stack",
             "DependsOn": [
                  "ReplicaSetMember1",
-                 "ReplicaSetMember2",
+                 "ReplicaSetMember2"
             ],
             "Properties" : {
-                "TemplateURL": { "FN::Join": ["", [{"Ref" : "DAPITemplates" },"MongoPrimary.cftemplate"]]},
+                "TemplateURL": { "Fn::Join": ["", [{"Ref" : "DAPITemplates" },"MongoPrimary.cftemplate"]]},
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
                     "VolumeSize" : { "Ref" : "VolumeSize" },
-                    "AccessKeyId" : { "Ref" : "AccessKey" },
-                    "SecretAccessKey" : {"Fn::GetAtt": ["AccessKey", "SecretAccessKey"]},
+                    "AccessKeyId"         : { "Ref" : "AccessKeyId" },
+                    "SecretAccessKey"     : { "Ref" : "SecretAccessKey" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
-                    "ServerName" : { "FN::Join": ["", [{"Ref" : "ReplicaSetName" },"Primary1"]]},
+                    "ReplicaSetMember1" : { "Fn::GetAtt" : ["ReplicaSetMember1", "Outputs.ReplicaSetMemberName"] },
+                    "ReplicaSetMember2" : { "Fn::GetAtt" : ["ReplicaSetMember2", "Outputs.ReplicaSetMemberName"] },
+                    "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Primary1"]]},
                     "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
                     "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ3"] }
                 }
-            }
-        },
-
-        "WaitConditionP1" : {
-            "Type" : "AWS::CloudFormation::WaitCondition",
-            "DependsOn" : "ReplicaSetPrimary1",
-            "Properties" : {
-                "Handle" : { "Ref" : "WaitHandleP1" },
-                "Timeout" : "600"
             }
         }
     },
 
     "Outputs" : {
         "ReplicaSetMemberName1" : {
-            "Value" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "Ouptputs.PublicDnsName" ] },
+            "Value" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "Outputs.PublicDnsName" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set endpoint (node 1 : PRIMARY)"
         },
         "ReplicaSetMemberName2" : {

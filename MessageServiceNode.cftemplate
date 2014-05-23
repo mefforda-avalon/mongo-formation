@@ -17,9 +17,9 @@
 
         "InstanceType" : {
             "Type" : "String",
-            "Default" : "m1.large",
-            "AllowedValues" : [ "m1.small", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "c1.xlarge", "cc1.4xlarge" ],
-            "Description" : "EC2 instance type (e.g. m1.large, m1.xlarge, m2.xlarge)"
+            "Default" : "m3.medium",
+            "AllowedValues" : [ "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge", "m3.4xlarge", "c2.xlarge", "cc1.4xlarge" ],
+            "Description" : "EC2 instance type (e.g. m3.large, m3.xlarge, m3.xlarge)"
         },
 
         "AccessKeyId" : {
@@ -51,12 +51,12 @@
 
         "GitHubSshPublicKey" : {
             "Description" : "Public Key to access JHT Github",
-            "Type" : "String",
+            "Type" : "String"
         },
 
         "GitHubSshPrivateKey" : {
             "Description" : "Private Key to access JHT Github",
-            "Type" : "String",
+            "Type" : "String"
         },
 
         "InstanceZone" : {
@@ -88,7 +88,7 @@
             "ap-southeast-2": { "64" : "ami-c9562fc8", "64HVM" : "ami-bb562fba" },
             "ap-northeast-1": { "64" : "ami-3b4bd301", "64HVM" : "ami-cf4ad2f5" },
             "sa-east-1"     : { "64" : "ami-215dff3c", "64HVM" : "ami-635dff7e" }
-        },
+        }
     },
 
     "Resources" : {
@@ -100,10 +100,8 @@
                     "config" : {
                         "packages" : {
                             "yum" : {
-                                "mdadm" : [],
                                 "sysstat" : [],
-                                "xfsprogs" : [],
-                                "ntp" : []
+                                "ntp" : [],
                                 "git" : []
                             }
                         },
@@ -120,36 +118,8 @@
                                 "owner" : "root",
                                 "group" : "root"
                             },
-                            "/etc/yum.repos.d/10gen.repo" : {
-                                "content" : { "Fn::Join" : ["", [
-                                    "[10gen]\n",
-                                    "name=10gen Repository\n",
-                                    "baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64\n",
-                                    "gpgcheck=0\n"
-                                ] ] },
-                                "mode" : "000644",
-                                "owner" : "root",
-                                "group" : "root"
-                            },
-                            "/etc/rc.local" : {
-                               "content" : { "Fn::Join" : ["", [
-                                    "#!/bin/sh\n",
-                                    "#\n",
-                                    "# This script will be executed *after* all the other init scripts.\n",
-                                    "# You can put your own initialization stuff in here if you don't\n",
-                                    "# want to do the full Sys V style init stuff.\n",
-                                    "# \n",
-                                    "# See http://docs.mongodb.org/manual/faq/diagnostics/#does-tcp-keepalive-time-affect-sharded-clusters-and-replica-sets\n",
-                                    "echo 300 > /proc/sys/net/ipv4/tcp_keepalive_time\n",
-                                    "touch /var/lock/subsys/local\n"
-                               ] ] },
-                                "mode" : "000644",
-                                "owner" : "root",
-                                "group" : "root"
-                                }
-                            },
                             "/etc/flume/conf/flume.conf" : {
-                               "content" : { "Fn::Join" : ["", [
+                                "content" : { "Fn::Join" : ["", [
                                     "# Tell agent1 which ones we want to activate.\n",
                                     "agent1.channels = bin-channel json-channel\n",
                                     "agent1.sources = thrift-json-source thrift-bin-source\n",
@@ -230,16 +200,16 @@
                                     "agent1.sinks.mongo-sink.collection = TestCollection\n",
                                     "agent1.sinks.mongo-sink.batch = 100\n",
                                     "agent1.sinks.mongo-sink.channel = json-channel\n"
-                               ] ] },
+                                ] ] },
                                 "mode" : "000644",
                                 "owner" : "root",
                                 "group" : "root"
-                                }
+                            }
                         },
                         "services" : {
-                                "sysvinit" : {
+                            "sysvinit" : {
                                 "ntpd"    : { "enabled" : "true", "ensureRunning" : "true" }
-                                 }
+                             }
                         }
                     }
                 }
@@ -247,134 +217,123 @@
 
             "Properties" : {
                 "InstanceType" : { "Ref" : "InstanceType" },
-                "ImageId" : { "Fn::FindInMap" : [ "RegionImageZone", { "Ref" : "AWS::Region" },
-                    { "Fn::FindInMap" : [ "InstanceTypeArch", { "Ref" : "InstanceType" }, "Arch" ] } ] },
-                "Tags" : [{ "Key" : "Name", "Value" : "MongoReplica" }],
+                "ImageId" : { 
+                    "Fn::FindInMap" : [
+                         "RegionImageZone", { "Ref" : "AWS::Region" },
+                        {
+                            "Fn::FindInMap" : [ "InstanceTypeArch", { "Ref" : "InstanceType" }, "Arch" ]
+                        }
+                    ]
+                },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Ref" : "ServerName" } },
+                    { "Key" : "Type", "Value" : "MessageService" }
+                ],
                 "SecurityGroups" : [ { "Ref" : "SecurityGroupName" } ],
                 "KeyName" : { "Ref" : "KeyName" },
                 "AvailabilityZone" : {"Ref" : "InstanceZone" },
                 "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
-                "#!/bin/bash\n",
-                "#\n",
-                "# Sending all output to /tmp/install.log\n",
-                "#\n",
-                "exec 2> /tmp/install.log\n",
-                "exec >> /tmp/install.log\n",
-                "#\n",
-                "# Updating CloudFormation scripts\n",
-                "#\n",
-                "yum update -y aws-cfn-bootstrap\n",
+                    "#!/bin/bash\n",
+                    "#\n",
+                    "# Sending all output to /tmp/install.log\n",
+                    "#\n",
+                    "exec 2> /tmp/install.log\n",
+                    "exec >> /tmp/install.log\n",
+                    "#\n",
+                    "# Updating CloudFormation scripts\n",
+                    "#\n",
+                    "yum update -y aws-cfn-bootstrap\n",
 
-                "# Error reporting helper function\n",
-                "function error_exit\n",
-                "{\n",
-                "/opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WaitHandleReplicaSetMember" }, "'\n",
-                "exit 1\n",
-                "}\n",
-
-                "## Initialize CloudFormation bits\n",
-                "/opt/aws/bin/cfn-init -v -s ", { "Ref" : "AWS::StackName" }, " -r MessageServiceInstance",
-                "   --access-key ",  { "Ref" : "AccessKeyId" },
-                "   --secret-key ", {"Ref": "SecretAccessKey" },
-                "   --region ", { "Ref" : "AWS::Region" }, " > /tmp/cfn-init.log 2>&1 || error_exit $(</tmp/cfn-init.log)\n",
-                "#\n",
+                    "## Initialize CloudFormation bits\n",
+                    "/opt/aws/bin/cfn-init -v -s ", { "Ref" : "AWS::StackName" }, " -r MessageServiceInstance",
+                    "   --access-key ",  { "Ref" : "AccessKeyId" },
+                    "   --secret-key ", {"Ref": "SecretAccessKey" },
+                    "   --region ", { "Ref" : "AWS::Region" }, " > /tmp/cfn-init.log 2>&1 || error_exit $(</tmp/cfn-init.log)\n",
+                    "#\n",
 
 
-                "## Updating RPMs and Installing MongoDB\n",
-                "## Update RPMs\n",
-                "#\n",
-                "yum update -y\n",
+                    "## Updating RPMs and Installing MongoDB\n",
+                    "## Update RPMs\n",
+                    "#\n",
+                    "yum update -y\n",
 
 
-                "## Install Node.JS\n",
-                "#yum install nodejs -enablerepo=epel -y\n",
-                "cd /usr/local/src\n",
-                "wget http://nodejs.org/dist/",{"Ref": "NodeJSVersion"},"/node-v",{"Ref": "NodeJSVersion"},"-linux-x64.tar.gz\n",
-                "tar –xzvf node-v",{"Ref": "NodeJSVersion"},"-linux-x64.tar.gz\n",
-                "cd node-v",{"Ref": "NodeJSVersion"},"-linux-x64\n",
-                "mv include/node /usr/local/include/\n",
-                "mv lib/node_modules /usr/local/lib/\n",
-                "mv share/man/man1/node.1 /usr/local/share/man/man1/\n",
-                "mv bin/* /usr/local/bin/\n",
+                    "## Install Node.JS\n",
+                    "#yum install nodejs -enablerepo=epel -y\n",
+                    "cd /usr/local/src\n",
+                    "wget http://nodejs.org/dist/",{"Ref": "NodeJSVersion"},"/node-v",{"Ref": "NodeJSVersion"},"-linux-x64.tar.gz\n",
+                    "tar -xzvf node-v",{"Ref": "NodeJSVersion"},"-linux-x64.tar.gz\n",
+                    "cd node-v",{"Ref": "NodeJSVersion"},"-linux-x64\n",
+                    "mv include/node /usr/local/include/\n",
+                    "mv lib/node_modules /usr/local/lib/\n",
+                    "mv share/man/man1/node.1 /usr/local/share/man/man1/\n",
+                    "mv bin/* /usr/local/bin/\n",
 
-                "## Install Flume\n",
-                "cd /etc/yum.repos.d\n",
-                "wget http://archive.cloudera.com/cdh4/redhat/6/x86_64/cdh/cloudera-cdh4.repo\n",
-                "yum install flume-ng-agent\n",
-                "## Updating system config and starting Flume-NG-Agent\n",
-                "#\n",
-                "chkconfig flume-ng-agent on\n",
-                "service flume-ng-agent start\n",
+                    "## Install Flume\n",
+                    "cd /etc/yum.repos.d\n",
+                    "wget http://archive.cloudera.com/cdh4/redhat/6/x86_64/cdh/cloudera-cdh4.repo\n",
+                    "yum install flume-ng-agent\n",
+                    "## Updating system config and starting Flume-NG-Agent\n",
+                    "#\n",
+                    "chkconfig flume-ng-agent on\n",
+                    "service flume-ng-agent start\n",
 
-                "## Install Thrift from source\n",
-                "#\n",
-                "yum install automake libtool flex bison pkgconfig gcc-c++ \\\n",
-                "\tboost-devel libevent-devel zlib-devel python-devel \\\n",
-                "\topenssl-devel ruby-devel lua-devel\n",
-                "\n",
-                "cd /usr/local/src\n",
-                "git clone https://git-wip-us.apache.org/repos/asf/thrift.git\n",
-                "cd thrift\n",
-                "./bootstrap.sh\n",
-                "./configure --with-lua=no\n",
-                "make\n",
-                "make install\n",
-                "#Install thrift Node.JS libs
-                "cp -rp lib/nodejs/lib/thrift /usr/local/lib/node_modules/\n",
+                    "## Install Thrift from source\n",
+                    "#\n",
+                    "yum install automake libtool flex bison pkgconfig gcc-c++ \\\n",
+                    "\tboost-devel libevent-devel zlib-devel python-devel \\\n",
+                    "\topenssl-devel ruby-devel lua-devel\n",
+                    "\n",
+                    "cd /usr/local/src\n",
+                    "git clone https://git-wip-us.apache.org/repos/asf/thrift.git\n",
+                    "cd thrift\n",
+                    "./bootstrap.sh\n",
+                    "./configure --with-lua=no\n",
+                    "make\n",
+                    "make install\n",
+                    "#Install thrift Node.JS libs\n",
+                    "cp -rp lib/nodejs/lib/thrift /usr/local/lib/node_modules/\n",
 
-                "## Install DAPI-MessageService\n",
+                    "## Install DAPI-MessageService\n",
 
-                "#Install mocha globally\n",
-                "npm install –g mocha\n",
+                    "#Install mocha globally\n",
+                    "npm install -g mocha\n",
 
-                "#Install jscoverage from source\n",
-                "cd /usr/local/src\n",
-                "wget http://siliconforks.com/jscoverage/download/jscoverage-0.5.tar.bz2\n",
-                "tar -xvf jscoverage-0.5.tar.bz2\n",
-                "cd jscoverage-0.5\n",
-                "./configure\n",
-                "make\n",
-                "make install\n",
-                "\n",
+                    "#Install jscoverage from source\n",
+                    "cd /usr/local/src\n",
+                    "wget http://siliconforks.com/jscoverage/download/jscoverage-0.5.tar.bz2\n",
+                    "tar -xvf jscoverage-0.5.tar.bz2\n",
+                    "cd jscoverage-0.5\n",
+                    "./configure\n",
+                    "make\n",
+                    "make install\n",
+                    "\n",
 
-                "#Installing DAPI-MessageService from git\n",
-                "#The following instructions should be performed as the user you intend to use in operating the message service.\n",
-                "\n",
-                "if [ ! -d '/home/", { "Ref": "DAPIUser" }, "' ];then useradd ", { "Ref": "DAPIUser" }, ";fi\n",
-                "cd /home/", { "Ref": "DAPIUser" }, "\n",
-                "git clone git@github.com:chad-jht/DAPI-MessageService.git\n",
-                "cd DAPI-MessageService\n",
-                "#Ideally you could run this and it would take care of the flume-logger block\n",
-                "#but because of the issues with thrift that can’t happen yet.\n",
-                "#npm install\n",
-                "\n",
-                "#Installing flume-logger from git\n",
-                "#This is unfortunately more complex than it would otherwise be, because of the thrift complications.\n",
-                "#This process can be simplified once thrift versions are updated to include the TCompactProtocol\n",
-                "# as mentioned previously.\n",
-                "\n",
-                "cd node_modules\n",
-                "GIT_SSH='ssh -i /root/.ssh/jht-github' git clone git@github.com:chad-jht/flume-logger.git\n",
-                "cd flume-logger\n",
-                "mkdir node_modules\n",
-                "cp -rp /usr/local/lib/node_modules/thrift node_modules\n",
-                "npm install q\n",
-                "npm install node-int64\n",
-                "chown -R ", { "Ref": "DAPIUser" }, ":", { "Ref": "DAPIUser" }, " /home/", { "Ref": "DAPIUser" }, "\n"
-            }
-        },
-
-        "WaitHandleReplicaSetMember" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-
-        "WaitConditionReplicaSetMember" : {
-            "Type" : "AWS::CloudFormation::WaitCondition",
-            "DependsOn" : "MessageServiceInstance",
-            "Properties" : {
-                "Handle" : { "Ref" : "WaitHandleReplicaSetMember" },
-                "Timeout" : "600"
+                    "#Installing DAPI-MessageService from git\n",
+                    "#The following instructions should be performed as the user you intend to use in operating the message service.\n",
+                    "\n",
+                    "if [ ! -d '/home/", { "Ref": "DAPIUser" }, "' ];then useradd ", { "Ref": "DAPIUser" }, ";fi\n",
+                    "cd /home/", { "Ref": "DAPIUser" }, "\n",
+                    "git clone git@github.com:chad-jht/DAPI-MessageService.git\n",
+                    "cd DAPI-MessageService\n",
+                    "#Ideally you could run this and it would take care of the flume-logger block\n",
+                    "#but because of the issues with thrift that can't happen yet.\n",
+                    "#npm install\n",
+                    "\n",
+                    "#Installing flume-logger from git\n",
+                    "#This is unfortunately more complex than it would otherwise be, because of the thrift complications.\n",
+                    "#This process can be simplified once thrift versions are updated to include the TCompactProtocol\n",
+                    "# as mentioned previously.\n",
+                    "\n",
+                    "cd node_modules\n",
+                    "GIT_SSH='ssh -i /root/.ssh/jht-github' git clone git@github.com:chad-jht/flume-logger.git\n",
+                    "cd flume-logger\n",
+                    "mkdir node_modules\n",
+                    "cp -rp /usr/local/lib/node_modules/thrift node_modules\n",
+                    "npm install q\n",
+                    "npm install node-int64\n",
+                    "chown -R ", { "Ref": "DAPIUser" }, ":", { "Ref": "DAPIUser" }, " /home/", { "Ref": "DAPIUser" }, "\n"
+                ]]}}
             }
         }
     },

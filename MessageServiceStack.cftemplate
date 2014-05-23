@@ -1,5 +1,5 @@
 {
-    "AWSTemplateFormatVersion" : "2014-05-21",
+    "AWSTemplateFormatVersion" : "2010-09-09",
 
     "Description" : "MongoDB Replica Set Stack 20140521-01",
 
@@ -9,10 +9,20 @@
             "Type" : "String"
         },
 
-        "KeyName" : {
+        "ClusterName" : {
             "Description" :"Name of this MessageService Cluster",
             "Type" : "String",
             "Default": "MessageService"
+        },
+
+        "AccessKeyId" : {
+            "Description" : "Access Key ID",
+            "Type" : "String"
+        },
+
+        "SecretAccessKey" : {
+            "Description" : "Secret Access Key for the specified Access Key ID",
+            "Type" : "String"
         },
 
         "InstanceType" : {
@@ -27,6 +37,12 @@
             "Type" : "String"
         },
 
+        "NodeJSVersion" : {
+            "Description" : "NodeJS Version",
+            "Type" : "String",
+            "Default" : "0.10.28"
+        },
+
         "DAPIUser" : {
             "Description" : "User under which to install DAPI-MessageService",
             "Type" : "String",
@@ -35,19 +51,20 @@
 
         "GitHubSshPublicKey" : {
             "Description" : "Public Key to access JHT Github",
-            "Type" : "String",
+            "Type" : "String"
         },
 
         "GitHubSshPrivateKey" : {
             "Description" : "Private Key to access JHT Github",
-            "Type" : "String",
+            "Type" : "String"
         },
 
         "DAPITemplates" : {
             "Description" : "S3 Bucket containing the DAPI CloudFormation Templates",
             "Type" : "String",
-            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/",
+            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/"
         }
+
     },
 
     "Mappings" : {
@@ -91,19 +108,19 @@
         "MessageServiceNode1" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL": { "FN::Join": ["", [{"Ref" : "DAPITemplates" },"MessageServiceNode.cftemplate"]]},
+                "TemplateURL": { "Fn::Join": ["", [{"Ref" : "DAPITemplates" },"MessageServiceNode.cftemplate"]]},
                 "Parameters" : {
                     "KeyName"             : { "Ref" : "KeyName" },
-                    "ServerName"          : { "FN::Join": ["", [{"Ref" : "ClusterName" },"Node1"]]},
+                    "ServerName"          : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Node1"]]},
                     "InstanceType"        : { "Ref" : "InstanceType" },
-                    "InstanceZone"        : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] }
-                    "AccessKeyId"         : { "Ref" : "AccessKey" },
-                    "SecretAccessKey"     : { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
+                    "InstanceZone"        : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] },
+                    "AccessKeyId"         : { "Ref" : "AccessKeyId" },
+                    "SecretAccessKey"     : { "Ref" : "SecretAccessKey" },
                     "SecurityGroupName"   : { "Ref" : "SecurityGroupName" },
                     "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
                     "DAPIUser"            : { "Ref" : "DAPIUser" },
                     "GitHubSshPublicKey"  : { "Ref" : "GitHubSshPublicKey" },
-                    "GitHubSshPrivateKey" : { "Ref" : "GitHubSshPrivateKey" },
+                    "GitHubSshPrivateKey" : { "Ref" : "GitHubSshPrivateKey" }
                 }
             }
         },
@@ -114,44 +131,30 @@
                 "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MessageServiceNode.cftemplate",
                 "Parameters" : {
                     "KeyName"             : { "Ref" : "KeyName" },
-                    "ServerName"          : { "FN::Join": ["", [{"Ref" : "ClusterName" },"Node2"]]},
+                    "ServerName"          : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Node2"]]},
                     "InstanceType"        : { "Ref" : "InstanceType" },
-                    "InstanceZone"        : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ2"] }
-                    "AccessKeyId"         : { "Ref" : "AccessKey" },
-                    "SecretAccessKey"     : { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
+                    "InstanceZone"        : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ2"] },
+                    "AccessKeyId"         : { "Ref" : "AccessKeyId" },
+                    "SecretAccessKey"     : { "Ref" : "SecretAccessKey" },
                     "SecurityGroupName"   : { "Ref" : "SecurityGroupName" },
                     "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
                     "DAPIUser"            : { "Ref" : "DAPIUser" },
                     "GitHubSshPublicKey"  : { "Ref" : "GitHubSshPublicKey" },
-                    "GitHubSshPrivateKey" : { "Ref" : "GitHubSshPrivateKey" },
+                    "GitHubSshPrivateKey" : { "Ref" : "GitHubSshPrivateKey" }
                 }
-            }
-        },
-
-        "WaitHandleP1" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-
-        "WaitConditionP1" : {
-            "Type" : "AWS::CloudFormation::WaitCondition",
-            "DependsOn" : ["MessageServiceNode1","MessageServiceNode2"]
-            "Properties" : {
-                "Handle" : { "Ref" : "WaitHandleP1" },
-                "Timeout" : "600"
             }
         }
     },
 
     "Outputs" : {
         "MessageService1" : {
-            "Value" : { "Fn::GetAtt" : [ "MessageServiceNode1", "Ouptputs.MessageServiceName" ] },
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceNode1", "Outputs.MessageServiceName" ] },
             "Description" : "Public DNS name of the MessageService1 endpoint (node 1)"
         },
         "MessageService2" : {
-            "Value" : { "Fn::GetAtt" : [ "MessageServiceNode2", "Ouptputs.MessageServiceName" ] },
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceNode2", "Outputs.MessageServiceName" ] },
             "Description" : "Public DNS name of the MessageService2 endpoint (node 2)"
-        },
+        }
     }
 }
 

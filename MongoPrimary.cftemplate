@@ -1,5 +1,5 @@
 {
-    "AWSTemplateFormatVersion" : "2014-05-21",
+    "AWSTemplateFormatVersion" : "2010-09-09",
 
     "Description" : "MongoDB Primary Node 20140521-01",
 
@@ -30,8 +30,8 @@
         "VolumeType" : {
             "Description" : "EBS Volume type (Standard or Provisioned)",
             "AllowedValues": ["Standard","Provisioned"],
-            "Type" : "Number",
-            "Default" : "200"
+            "Type" : "String",
+            "Default" : "Provisioned"
         },
 
         "IopsPerVolume" : {
@@ -57,6 +57,16 @@
 
         "SecurityGroupName" : {
             "Description" : "MongoDB replica set security group name",
+            "Type" : "String"
+        },
+
+        "ReplicaSetMember1" : {
+            "Description" : "MongoDB replica set replica 1",
+            "Type" : "String"
+        },
+
+        "ReplicaSetMember2" : {
+            "Description" : "MongoDB replica set replica 2",
             "Type" : "String"
         },
 
@@ -110,10 +120,6 @@
 
         "ReplicaSetPrimary1" : {
             "Type" : "AWS::EC2::Instance",
-            "DependsOn": [
-                 "ReplicaSetMember1",
-                 "ReplicaSetMember2",
-            ],
             "Metadata" : {
                 "AWS::CloudFormation::Init" : {
                     "config" : {
@@ -174,11 +180,11 @@
                     ]
                 },
                 "Tags" : [
-                    { "Key" : "Name", "Value" : { "Ref": "ServerName" } }
-                    { "Key" : "Type", "Value" : "MongoServer" }
+                    { "Key" : "Name", "Value" : { "Ref": "ServerName" } },
+                    { "Key" : "Type", "Value" : "MongoServer" },
                     { "Key" : "Role", "Value" : "MongoPrimary" }
                 ],
-                "SecurityGroups" : [ { "Ref" : "MongoSecurityGroup" } ],
+                "SecurityGroups" : [ { "Ref" : "SecurityGroupName" } ],
                 "KeyName" : { "Ref" : "KeyName" },
                 "AvailabilityZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] },
                 "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
@@ -197,8 +203,8 @@
                 "}\n",
                 "# CloudFormation: Initialize\n",
                 "/opt/aws/bin/cfn-init -v -s ", { "Ref" : "AWS::StackName" }, " -r ReplicaSetPrimary1",
-                "   --access-key ",  { "Ref" : "AccessKey" },
-                "   --secret-key ", {"Fn::GetAtt": ["AccessKey", "SecretAccessKey"]},
+                "   --access-key ",  { "Ref" : "AccessKeyId" },
+                "   --secret-key ", {"Ref": "SecretAccessKey"},
                 "   --region ", { "Ref" : "AWS::Region" }, " > /tmp/cfn-init.log 2>&1 || error_exit $(</tmp/cfn-init.log)\n",
                 "# CLNGS UserData Start\n",
                 "#\n",
@@ -285,8 +291,8 @@
                 "cat <<EOF > /tmp/replicaSetConfigInit.js\n",
                 "config = {_id: \"", { "Ref" : "ReplicaSetName" } ,"\", members : [",
                     "{_id : 0, host:\"$MASTER:27017\"},",
-                    "{_id : 1, host:\"", { "Fn::GetAtt" : ["ReplicaSetMember1", "Outputs.ReplicaSetMemberName"] },":27017\"},",
-                    "{_id : 2, host:\"", { "Fn::GetAtt" : ["ReplicaSetMember2", "Outputs.ReplicaSetMemberName"] },":27017\"}",
+                    "{_id : 1, host:\"", { "Ref" : "ReplicaSetMember1" },":27017\"},",
+                    "{_id : 2, host:\"", { "Ref" : "ReplicaSetMember2" },":27017\"}",
                 "]};\n",
                 "rs.initiate(config);\n",
                 "EOF\n",
@@ -302,11 +308,11 @@
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
-                "VolumeType": "Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
                 "Iops": { "Ref": "IopsPerVolume" },
                 "Tags" : [
-                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_1" }
-                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" }
+                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_1" },
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" },
                     { "Key" : "VolumeId", "Value" : "MongoVolume1P1" }
                 ],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "AvailabilityZone" ]}
@@ -317,11 +323,11 @@
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
-                "VolumeType": "Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
                 "Iops": { "Ref": "IopsPerVolume" },
                 "Tags" : [
-                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_2" }
-                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" }
+                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_2" },
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" },
                     { "Key" : "VolumeId", "Value" : "MongoVolume2P1" }
                 ],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "AvailabilityZone" ]}
@@ -332,11 +338,11 @@
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
-                "VolumeType": "Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
                 "Iops": { "Ref": "IopsPerVolume" },
                 "Tags" : [
-                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_3" }
-                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" }
+                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_3" },
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" },
                     { "Key" : "VolumeId", "Value" : "MongoVolume3P1" }
                 ],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "AvailabilityZone" ]}
@@ -347,11 +353,11 @@
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
-                "VolumeType": "Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
                 "Iops": { "Ref": "IopsPerVolume" },
                 "Tags" : [
-                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_4" }
-                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" }
+                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_4" },
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" },
                     { "Key" : "VolumeId", "Value" : "MongoVolume4P1" }
                 ],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "AvailabilityZone" ]}
@@ -413,6 +419,6 @@
         "ReplicaSetMemberName1" : {
             "Value" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "PublicDnsName" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set endpoint (node 1 : PRIMARY)"
-        },
+        }
     }
 }

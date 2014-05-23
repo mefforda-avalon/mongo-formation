@@ -76,7 +76,7 @@
             "ap-southeast-2": { "64" : "ami-c9562fc8", "64HVM" : "ami-bb562fba" },
             "ap-northeast-1": { "64" : "ami-3b4bd301", "64HVM" : "ami-cf4ad2f5" },
             "sa-east-1"     : { "64" : "ami-215dff3c", "64HVM" : "ami-635dff7e" }
-        },
+        }
     },
 
     "Resources" : {
@@ -137,8 +137,8 @@
                 "ImageId" : { "Fn::FindInMap" : [ "RegionImageZone", { "Ref" : "AWS::Region" },
                     { "Fn::FindInMap" : [ "InstanceTypeArch", { "Ref" : "InstanceType" }, "Arch" ] } ] },
                 "Tags" : [
-                    { "Key" : "Name", "Value" : { "Ref": "ServerName" } }
-                    { "Key" : "Type", "Value" : "MongoServer" }
+                    { "Key" : "Name", "Value" : { "Ref": "ServerName" } },
+                    { "Key" : "Type", "Value" : "MongoServer" },
                     { "Key" : "Role", "Value" : "MongoReplica" }
                 ],
                 "SecurityGroups" : [ { "Ref" : "SecurityGroupName" } ],

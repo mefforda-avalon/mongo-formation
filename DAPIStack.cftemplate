@@ -1,5 +1,5 @@
 {
-    "AWSTemplateFormatVersion" : "2014-05-21",
+    "AWSTemplateFormatVersion" : "2010-09-09",
 
     "Description" : "MongoDB Replica Set Stack 20140521-01",
 
@@ -19,7 +19,7 @@
             "Description" : "Name for the MongoDB Replica Set",
             "Type" : "String",
             "Default" : "ReplicaSet1"
-        }
+        },
 
         "ClientIpAddress" : {
             "Description" : "IP accessing SSH and MongoDB ports (in CIDR format, e.g.: 126.23.2.1/24)",
@@ -67,7 +67,7 @@
         "VolumeType" : {
             "Description" : "EBS Volume type (Standard or Provisioned)",
             "AllowedValues": ["Standard","Provisioned"],
-            "Type" : "Number",
+            "Type" : "String",
             "Default" : "Provisioned"
         },
 
@@ -85,18 +85,18 @@
 
         "GitHubSshPublicKey" : {
             "Description" : "Public Key to access JHT Github",
-            "Type" : "String",
+            "Type" : "String"
         },
 
         "GitHubSshPrivateKey" : {
             "Description" : "Private Key to access JHT Github",
-            "Type" : "String",
+            "Type" : "String"
         },
 
         "DAPITemplates" : {
             "Description" : "S3 Bucket containing the DAPI CloudFormation Templates",
             "Type" : "String",
-            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/",
+            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/"
         }
     },
 
@@ -142,7 +142,7 @@
 
     "Resources" : {
 
-        "MessageService-SG" : {
+        "MessageServiceSG" : {
             "Type" : "AWS::EC2::SecurityGroup",
             "Properties" : {
                 "GroupDescription" : "DAPI-MessageService Security Group",
@@ -156,39 +156,39 @@
             }
         },
 
-        "DataService-SG" : {
+        "DataServiceSG" : {
             "Type" : "AWS::EC2::SecurityGroup",
             "DependsOn": [
-                "MessageService-SG"
+                "MessageServiceSG"
             ],
             "Properties" : {
                 "GroupDescription" : "DAPI-DataService Security Group",
                 "SecurityGroupIngress" : [
                         {
                             "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80",
-                            "SourceSecurityGroupId" : { "Ref": "MessageService-SG" }
+                            "SourceSecurityGroupId" : { "Ref": "MessageServiceSG" }
                         },
                         {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref": "SshIpAddress" } }
                 ]
             }
         },
 
-        "Mongo-SG" : {
+        "MongoSG" : {
             "Type" : "AWS::EC2::SecurityGroup",
             "DependsOn": [
-                "DataService-SG",
-                "MessageService-SG"
+                "DataServiceSG",
+                "MessageServiceSG"
             ],
             "Properties" : {
                 "GroupDescription" : "DAPI-MongoDB Security Group",
                 "SecurityGroupIngress" : [
                         {
                             "IpProtocol" : "tcp", "FromPort" : "27017", "ToPort" : "27017",
-                            "SourceSecurityGroupId" : { "Ref": "MessageService-SG" }
+                            "SourceSecurityGroupId" : { "Ref": "MessageServiceSG" }
                         },
                         {
                             "IpProtocol" : "tcp", "FromPort" : "27017", "ToPort" : "27017",
-                            "SourceSecurityGroupId" : { "Ref": "DataService-SG" }
+                            "SourceSecurityGroupId" : { "Ref": "DataServiceSG" }
                         },
                         {"IpProtocol" : "tcp", "FromPort" : "28017", "ToPort" : "28017", "CidrIp" : { "Ref": "ClientIpAddress" } },
                         {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref": "ClientIpAddress" } }
@@ -199,16 +199,16 @@
         "MongoSecurityGroupIngress" : {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Properties" : {
-                "GroupName" : { "Ref" : "Mongo-SG" },
-                "IpProtocol" : "tcp", "FromPort" : "27017", "ToPort" : "27017", "SourceSecurityGroupName" : { "Ref" : "Mongo-SG" }
+                "GroupName" : { "Ref" : "MongoSG" },
+                "IpProtocol" : "tcp", "FromPort" : "27017", "ToPort" : "27017", "SourceSecurityGroupName" : { "Ref" : "MongoSG" }
             }
         },
 
         "MongoStatusIngress" : {
             "Type" : "AWS::EC2::SecurityGroupIngress",
             "Properties" : {
-                "GroupName" : { "Ref" : "Mongo-SG" },
-                "IpProtocol" : "tcp", "FromPort" : "28017", "ToPort" : "28017", "SourceSecurityGroupName" : { "Ref" : "Mongo-SG" }
+                "GroupName" : { "Ref" : "MongoSG" },
+                "IpProtocol" : "tcp", "FromPort" : "28017", "ToPort" : "28017", "SourceSecurityGroupName" : { "Ref" : "MongoSG" }
             }
         },
 
@@ -248,8 +248,8 @@
                     "AccessKeyId"         : { "Ref" : "AccessKey" },
                     "SecretAccessKey"     : { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
                     "ReplicaSetName"      : { "Ref" : "ReplicaSetName" },
-                    "SecurityGroupName"   : { "Ref" : "Mongo-SG" },
-                    "DAPITemplates"       : { "Ref" : "DAPITemplates" },
+                    "SecurityGroupName"   : { "Ref" : "MongoSG" },
+                    "DAPITemplates"       : { "Ref" : "DAPITemplates" }
                 }
             }
         },
@@ -264,12 +264,12 @@
                     "InstanceType"        : { "Ref" : "InstanceType" },
                     "AccessKeyId"         : { "Ref" : "AccessKey" },
                     "SecretAccessKey"     : { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
-                    "SecurityGroupName"   : { "Ref" : "MessageService-SG" },
+                    "SecurityGroupName"   : { "Ref" : "MessageServiceSG" },
                     "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
                     "DAPIUser"            : { "Ref" : "DAPIUser" },
                     "GitHubSshPublicKey"  : { "Ref" : "GitHubSshPublicKey" },
                     "GitHubSshPrivateKey" : { "Ref" : "GitHubSshPrivateKey" },
-                    "DAPITemplates"       : { "Ref" : "DAPITemplates" },
+                    "DAPITemplates"       : { "Ref" : "DAPITemplates" }
                 }
             }
         },
@@ -301,11 +301,11 @@
         "ReplicaSetMemberName3" : {
             "Value" : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetMember2" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set node 3"
-        }
+        },
         "MessageServiceName1" : {
             "Value" : { "Fn::GetAtt" : [ "MessageServiceStack", "Outputs.MessageService1" ] },
             "Description" : "Public DNS name of the MessageService Node 1"
-        }
+        },
         "MessageServiceName1" : {
             "Value" : { "Fn::GetAtt" : [ "MessageServiceStack", "Outputs.MessageService2" ] },
             "Description" : "Public DNS name of the MessageService Node 2"
