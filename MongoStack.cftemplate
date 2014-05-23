@@ -165,7 +165,7 @@
 
     "Outputs" : {
         "ReplicaSetMemberName1" : {
-            "Value" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "PublicDnsName" ] },
+            "Value" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "Ouptputs.PublicDnsName" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set endpoint (node 1 : PRIMARY)"
         },
         "ReplicaSetMemberName2" : {

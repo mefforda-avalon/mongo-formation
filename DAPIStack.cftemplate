@@ -9,6 +9,18 @@
             "Type" : "String"
         },
 
+        "ClusterName" : {
+            "Description" :"Name of this DAPI Cluster (Prefix for all node names)",
+            "Type" : "String",
+            "Default": ""
+        },
+
+        "ReplicaSetName" : {
+            "Description" : "Name for the MongoDB Replica Set",
+            "Type" : "String",
+            "Default" : "ReplicaSet1"
+        }
+
         "ClientIpAddress" : {
             "Description" : "IP accessing SSH and MongoDB ports (in CIDR format, e.g.: 126.23.2.1/24)",
             "Type" :"String",
@@ -64,13 +76,6 @@
             "Type" : "Number",
             "Default" : "200"
         },
-
-
-        "ReplicaSetName" : {
-            "Description" : "Name for the MongoDB Replica Set",
-            "Type" : "String",
-            "Default" : "ReplicaSet"
-        }
 
         "DAPIUser" : {
             "Description" : "User under which to install DAPI-MessageService",
@@ -230,6 +235,7 @@
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
+                    "ClusterName"          : { "FN::Join": ["", [{"Ref" : "ClusterName" },"Mongo"], { "Ref" : "ReplicaSetName" } ]},
                     "VolumeSize" : { "Ref" : "VolumeSize" },
                     "AccessKeyId" : { "Ref" : "AccessKey" },
                     "SecretAccessKey" : {"Fn::GetAtt": ["AccessKey", "SecretAccessKey"]},
@@ -245,6 +251,7 @@
                 "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MessageServiceStack.cftemplate",
                 "Parameters" : {
                     "KeyName"             : { "Ref" : "KeyName" },
+                    "ClusterName"          : { "FN::Join": ["", [{"Ref" : "ClusterName" },"MessageService"]]},
                     "InstanceType"        : { "Ref" : "InstanceType" },
                     "VolumeSize"          : { "Ref" : "VolumeSize" },
                     "AccessKeyId"         : { "Ref" : "AccessKey" },
@@ -275,16 +282,24 @@
 
     "Outputs" : {
         "ReplicaSetMemberName1" : {
-            "Value" : { "Fn::GetAtt" : [ "MongoInstanceP1", "PublicDnsName" ] },
+            "Value" : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetPrimary1" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set endpoint (node 1 : PRIMARY)"
         },
         "ReplicaSetMemberName2" : {
-            "Value" : { "Fn::GetAtt" : [ "ReplicaSetMember1", "Outputs.ReplicaSetMemberName" ] },
+            "Value" : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetMember1" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set node 2"
         },
         "ReplicaSetMemberName3" : {
-            "Value" : { "Fn::GetAtt" : [ "ReplicaSetMember2", "Outputs.ReplicaSetMemberName" ] },
+            "Value" : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetMember2" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set node 3"
+        }
+        "MessageServiceName1" : {
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceStack", "Outputs.MessageService1" ] },
+            "Description" : "Public DNS name of the MessageService Node 1"
+        }
+        "MessageServiceName1" : {
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceStack", "Outputs.MessageService2" ] },
+            "Description" : "Public DNS name of the MessageService Node 2"
         }
     }
 }

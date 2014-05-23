@@ -139,11 +139,11 @@
 
     "Outputs" : {
         "MessageService1" : {
-            "Value" : { "Fn::GetAtt" : [ "MessageServiceNode1", "PublicDnsName" ] },
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceNode1", "Ouptputs.MessageServiceName" ] },
             "Description" : "Public DNS name of the MessageService1 endpoint (node 1)"
         },
         "MessageService2" : {
-            "Value" : { "Fn::GetAtt" : [ "MessageServiceNode2", "PublicDnsName" ] },
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceNode2", "Ouptputs.MessageServiceName" ] },
             "Description" : "Public DNS name of the MessageService2 endpoint (node 2)"
         },
     }
