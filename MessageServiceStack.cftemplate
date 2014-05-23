@@ -42,6 +42,12 @@
             "Description" : "Private Key to access JHT Github",
             "Type" : "String",
         },
+
+        "DAPITemplates" : {
+            "Description" : "S3 Bucket containing the DAPI CloudFormation Templates",
+            "Type" : "String",
+            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/",
+        }
     },
 
     "Mappings" : {
@@ -85,7 +91,7 @@
         "MessageServiceNode1" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MessageServiceNode.cftemplate",
+                "TemplateURL": { "FN::Join": ["", [{"Ref" : "DAPITemplates" },"MessageServiceNode.cftemplate"]]},
                 "Parameters" : {
                     "KeyName"             : { "Ref" : "KeyName" },
                     "ServerName"          : { "FN::Join": ["", [{"Ref" : "ClusterName" },"Node1"]]},

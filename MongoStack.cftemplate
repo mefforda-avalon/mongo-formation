@@ -51,6 +51,12 @@
             "Description" : "Name for the Security Group for this MongoDB Replica Set",
             "Type" : "String",
         }
+
+        "DAPITemplates" : {
+            "Description" : "S3 Bucket containing the DAPI CloudFormation Templates",
+            "Type" : "String",
+            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/",
+        }
     },
 
     "Mappings" : {
@@ -98,7 +104,7 @@
         "ReplicaSetMember1" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MongoReplica.cftemplate",
+                "TemplateURL": { "FN::Join": ["", [{"Ref" : "DAPITemplates" },"MongoReplica.cftemplate"]]},
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
@@ -116,7 +122,7 @@
         "ReplicaSetMember2" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MongoReplica.cftemplate",
+                "TemplateURL": { "FN::Join": ["", [{"Ref" : "DAPITemplates" },"MongoReplica.cftemplate"]]},
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
@@ -138,7 +144,7 @@
                  "ReplicaSetMember2",
             ],
             "Properties" : {
-                "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MongoPrimary.cftemplate",
+                "TemplateURL": { "FN::Join": ["", [{"Ref" : "DAPITemplates" },"MongoPrimary.cftemplate"]]},
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
