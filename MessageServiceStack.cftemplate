@@ -1,0 +1,151 @@
+{
+    "AWSTemplateFormatVersion" : "2014-05-21",
+
+    "Description" : "MongoDB Replica Set Stack 20140521-01",
+
+    "Parameters" : {
+        "KeyName" : {
+            "Description" :"Name of an existing EC2 KeyPair to enable SSH access",
+            "Type" : "String"
+        },
+
+        "KeyName" : {
+            "Description" :"Name of this MessageService Cluster",
+            "Type" : "String",
+            "Default": "MessageService"
+        },
+
+        "InstanceType" : {
+            "Type" : "String",
+            "Default" : "m1.large",
+            "AllowedValues" : [ "m1.small", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "c1.xlarge", "cc1.4xlarge" ],
+            "Description" : "EC2 instance type (e.g.: m1.large, m1.xlarge, m2.xlarge)"
+        },
+
+        "SecurityGroupName" : {
+            "Description" : "MongoDB replica set security group name",
+            "Type" : "String"
+        },
+
+        "DAPIUser" : {
+            "Description" : "User under which to install DAPI-MessageService",
+            "Type" : "String",
+            "Default" : "ec2-user"
+        },
+
+        "GitHubSshPublicKey" : {
+            "Description" : "Public Key to access JHT Github",
+            "Type" : "String",
+        },
+
+        "GitHubSshPrivateKey" : {
+            "Description" : "Private Key to access JHT Github",
+            "Type" : "String",
+        },
+    },
+
+    "Mappings" : {
+        "InstanceTypeArch" : {
+            "m1.medium"   : { "Arch" : "64" },
+            "m1.large"    : { "Arch" : "64" },
+            "m1.xlarge"   : { "Arch" : "64" },
+            "m2.xlarge"   : { "Arch" : "64" },
+            "m2.2xlarge"  : { "Arch" : "64" },
+            "m2.4xlarge"  : { "Arch" : "64" },
+            "c1.medium"   : { "Arch" : "64" },
+            "c1.xlarge"   : { "Arch" : "64" },
+            "cc1.4xlarge" : { "Arch" : "64HVM" }
+        },
+
+        "RegionImageZone" : {
+            "us-east-1"     : { "64" : "ami-fb8e9292", "64HVM" : "ami-978d91fe" },
+            "us-west-2"     : { "64" : "ami-043a5034", "64HVM" : "ami-383a5008" },
+            "us-west-1"     : { "64" : "ami-7aba833f", "64HVM" : "ami-5aba831f" },
+            "eu-west-1"     : { "64" : "ami-2918e35e", "64HVM" : "ami-4b18e33c" },
+            "ap-southeast-1": { "64" : "ami-b40d5ee6", "64HVM" : "ami-860d5ed4" },
+            "ap-southeast-2": { "64" : "ami-c9562fc8", "64HVM" : "ami-bb562fba" },
+            "ap-northeast-1": { "64" : "ami-3b4bd301", "64HVM" : "ami-cf4ad2f5" },
+            "sa-east-1"     : { "64" : "ami-215dff3c", "64HVM" : "ami-635dff7e" }
+        },
+
+        "RegionZone" : {
+            "us-east-1"     : {"AZ1" : "us-east-1a", "AZ2" : "us-east-1b", "AZ3" : "us-east-1b", "AZ4" : "us-east-1d", "AZ5" : "us-east-1e"},
+            "us-west-1"     : {"AZ1" : "us-west-1a", "AZ2" : "us-west-1b", "AZ3" : "us-west-1c"},
+            "us-west-2"     : {"AZ1" : "us-west-2a", "AZ2" : "us-west-2b", "AZ3" : "us-west-2c"},
+            "eu-west-1"     : {"AZ1" : "eu-west-1a", "AZ2" : "eu-west-1b", "AZ3" : "eu-west-1c"},
+            "ap-southeast-1": {"AZ1" : "ap-southeast-1a", "AZ2" : "ap-southeast-1b"},
+            "ap-southeast-2": {"AZ1" : "ap-southeast-2a", "AZ2" : "ap-southeast-2b"},
+            "ap-northeast-1": {"AZ1" : "ap-northeast-1a", "AZ2" : "ap-northeast-1b"},
+            "sa-east-1"     : {"AZ1" : "sa-east-1a", "AZ2" : "sa-east-1b"}
+        }
+    },
+
+    "Resources" : {
+
+        "MessageServiceNode1" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" : {
+                "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MessageServiceNode.cftemplate",
+                "Parameters" : {
+                    "KeyName"             : { "Ref" : "KeyName" },
+                    "ServerName"          : { "FN::Join": ["", [{"Ref" : "ClusterName" },"Node1"]]},
+                    "InstanceType"        : { "Ref" : "InstanceType" },
+                    "InstanceZone"        : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] }
+                    "AccessKeyId"         : { "Ref" : "AccessKey" },
+                    "SecretAccessKey"     : { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
+                    "SecurityGroupName"   : { "Ref" : "SecurityGroupName" },
+                    "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
+                    "DAPIUser"            : { "Ref" : "DAPIUser" },
+                    "GitHubSshPublicKey"  : { "Ref" : "GitHubSshPublicKey" },
+                    "GitHubSshPrivateKey" : { "Ref" : "GitHubSshPrivateKey" },
+                }
+            }
+        },
+
+        "MessageServiceNode2" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" : {
+                "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MessageServiceNode.cftemplate",
+                "Parameters" : {
+                    "KeyName"             : { "Ref" : "KeyName" },
+                    "ServerName"          : { "FN::Join": ["", [{"Ref" : "ClusterName" },"Node2"]]},
+                    "InstanceType"        : { "Ref" : "InstanceType" },
+                    "InstanceZone"        : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ2"] }
+                    "AccessKeyId"         : { "Ref" : "AccessKey" },
+                    "SecretAccessKey"     : { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
+                    "SecurityGroupName"   : { "Ref" : "SecurityGroupName" },
+                    "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
+                    "DAPIUser"            : { "Ref" : "DAPIUser" },
+                    "GitHubSshPublicKey"  : { "Ref" : "GitHubSshPublicKey" },
+                    "GitHubSshPrivateKey" : { "Ref" : "GitHubSshPrivateKey" },
+                }
+            }
+        },
+
+        "WaitHandleP1" : {
+            "Type" : "AWS::CloudFormation::WaitConditionHandle",
+            "Properties" : {}
+        },
+
+        "WaitConditionP1" : {
+            "Type" : "AWS::CloudFormation::WaitCondition",
+            "DependsOn" : ["MessageServiceNode1","MessageServiceNode2"]
+            "Properties" : {
+                "Handle" : { "Ref" : "WaitHandleP1" },
+                "Timeout" : "600"
+            }
+        }
+    },
+
+    "Outputs" : {
+        "MessageService1" : {
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceNode1", "PublicDnsName" ] },
+            "Description" : "Public DNS name of the MessageService1 endpoint (node 1)"
+        },
+        "MessageService2" : {
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceNode2", "PublicDnsName" ] },
+            "Description" : "Public DNS name of the MessageService2 endpoint (node 2)"
+        },
+    }
+}
+

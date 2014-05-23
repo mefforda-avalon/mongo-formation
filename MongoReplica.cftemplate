@@ -4,6 +4,11 @@
     "Description" : "MongoDB Replica Node 20130621-01",
 
     "Parameters" : {
+        "ServerName" : {
+            "Description" :"Name of this server",
+            "Type" : "String"
+        },
+
         "KeyName" : {
             "Description" : "Name of an existing EC2 KeyPair to enable SSH access",
             "Type" : "String"
@@ -63,15 +68,15 @@
         },
 
         "RegionImageZone" : {
-            "us-east-1"     : { "64" : "ami-a73758ce", "64HVM" : "ami-a73758ce" },
-            "us-west-2"     : { "64" : "ami-0358ce33", "64HVM" : "ami-d75bcde7" },
-            "us-west-1"     : { "64" : "ami-3ffed17a", "64HVM" : "ami-47fed102" },
-            "eu-west-1"     : { "64" : "ami-c7c0d6b3", "64HVM" : "ami-d1c0d6a5" },
-            "ap-southeast-1": { "64" : "ami-fade91a8", "64HVM" : "ami-18de914a" },
-            "ap-southeast-2": { "64" : "ami-39b23d38", "64HVM" : "ami-2db33c2c" },
-            "ap-northeast-1": { "64" : "ami-d16bfbeb", "64HVM" : "ami-876bfbbd" },
-            "sa-east-1"     : { "64" : "ami-5253894f", "64HVM" : "ami-38538925" }
-        }
+            "us-east-1"     : { "64" : "ami-fb8e9292", "64HVM" : "ami-978d91fe" },
+            "us-west-2"     : { "64" : "ami-043a5034", "64HVM" : "ami-383a5008" },
+            "us-west-1"     : { "64" : "ami-7aba833f", "64HVM" : "ami-5aba831f" },
+            "eu-west-1"     : { "64" : "ami-2918e35e", "64HVM" : "ami-4b18e33c" },
+            "ap-southeast-1": { "64" : "ami-b40d5ee6", "64HVM" : "ami-860d5ed4" },
+            "ap-southeast-2": { "64" : "ami-c9562fc8", "64HVM" : "ami-bb562fba" },
+            "ap-northeast-1": { "64" : "ami-3b4bd301", "64HVM" : "ami-cf4ad2f5" },
+            "sa-east-1"     : { "64" : "ami-215dff3c", "64HVM" : "ami-635dff7e" }
+        },
     },
 
     "Resources" : {
@@ -131,7 +136,11 @@
                 "InstanceType" : { "Ref" : "InstanceType" },
                 "ImageId" : { "Fn::FindInMap" : [ "RegionImageZone", { "Ref" : "AWS::Region" },
                     { "Fn::FindInMap" : [ "InstanceTypeArch", { "Ref" : "InstanceType" }, "Arch" ] } ] },
-                "Tags" : [{ "Key" : "Name", "Value" : "MongoReplica" }],
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Ref": "ServerName" } }
+                    { "Key" : "Type", "Value" : "MongoServer" }
+                    { "Key" : "Role", "Value" : "MongoReplica" }
+                ],
                 "SecurityGroups" : [ { "Ref" : "SecurityGroupName" } ],
                 "KeyName" : { "Ref" : "KeyName" },
                 "AvailabilityZone" : {"Ref" : "InstanceZone" },

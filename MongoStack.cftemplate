@@ -1,0 +1,180 @@
+{
+    "AWSTemplateFormatVersion" : "2014-05-21",
+
+    "Description" : "MongoDB Replica Set Stack 20140521-01",
+
+    "Parameters" : {
+        "KeyName" : {
+            "Description" :"Name of an existing EC2 KeyPair to enable SSH access",
+            "Type" : "String"
+        },
+
+        "ClusterName" : {
+            "Description" :"Name of this MessageService Cluster",
+            "Type" : "String",
+            "Default" : "MessageService"
+        },
+
+        "InstanceType" : {
+            "Type" : "String",
+            "Default" : "m1.large",
+            "AllowedValues" : [ "m1.small", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "c1.xlarge", "cc1.4xlarge" ],
+            "Description" : "EC2 instance type (e.g.: m1.large, m1.xlarge, m2.xlarge)"
+        },
+
+        "VolumeSize" : {
+            "Description" : "Volume size for each EBS volume",
+            "Type" : "Number",
+            "Default" : "10"
+        },
+
+        "VolumeType" : {
+            "Description" : "EBS Volume type (Standard or Provisioned)",
+            "AllowedValues": ["Standard","Provisioned"],
+            "Type" : "Number",
+            "Default" : "200"
+        },
+
+        "IopsPerVolume" : {
+            "Description" : "Provisioned IOps Per Volume EBS volume (ignored for standard volumes)",
+            "Type" : "Number",
+            "Default" : "200"
+        },
+
+        "ReplicaSetName" : {
+            "Description" : "Name for the MongoDB Replica Set",
+            "Type" : "String",
+            "Default" : "ReplicaSet"
+        }
+
+        "SecurityGroupName" : {
+            "Description" : "Name for the Security Group for this MongoDB Replica Set",
+            "Type" : "String",
+        }
+    },
+
+    "Mappings" : {
+        "VolumeTypeKeys" : {
+            "Standard":     { "Key": "standard"},
+            "Provisioned":  { "Key": "io1"}
+        },
+        "InstanceTypeArch" : {
+            "m1.medium"   : { "Arch" : "64" },
+            "m1.large"    : { "Arch" : "64" },
+            "m1.xlarge"   : { "Arch" : "64" },
+            "m2.xlarge"   : { "Arch" : "64" },
+            "m2.2xlarge"  : { "Arch" : "64" },
+            "m2.4xlarge"  : { "Arch" : "64" },
+            "c1.medium"   : { "Arch" : "64" },
+            "c1.xlarge"   : { "Arch" : "64" },
+            "cc1.4xlarge" : { "Arch" : "64HVM" }
+        },
+
+        "RegionImageZone" : {
+            "us-east-1"     : { "64" : "ami-fb8e9292", "64HVM" : "ami-978d91fe" },
+            "us-west-2"     : { "64" : "ami-043a5034", "64HVM" : "ami-383a5008" },
+            "us-west-1"     : { "64" : "ami-7aba833f", "64HVM" : "ami-5aba831f" },
+            "eu-west-1"     : { "64" : "ami-2918e35e", "64HVM" : "ami-4b18e33c" },
+            "ap-southeast-1": { "64" : "ami-b40d5ee6", "64HVM" : "ami-860d5ed4" },
+            "ap-southeast-2": { "64" : "ami-c9562fc8", "64HVM" : "ami-bb562fba" },
+            "ap-northeast-1": { "64" : "ami-3b4bd301", "64HVM" : "ami-cf4ad2f5" },
+            "sa-east-1"     : { "64" : "ami-215dff3c", "64HVM" : "ami-635dff7e" }
+        },
+
+        "RegionZone" : {
+            "us-east-1"     : {"AZ1" : "us-east-1a", "AZ2" : "us-east-1b", "AZ3" : "us-east-1b", "AZ4" : "us-east-1d", "AZ5" : "us-east-1e"},
+            "us-west-1"     : {"AZ1" : "us-west-1a", "AZ2" : "us-west-1b", "AZ3" : "us-west-1c"},
+            "us-west-2"     : {"AZ1" : "us-west-2a", "AZ2" : "us-west-2b"},
+            "eu-west-1"     : {"AZ1" : "eu-west-1a", "AZ2" : "eu-west-1b", "AZ3" : "eu-west-1c"},
+            "ap-southeast-1": {"AZ1" : "ap-southeast-1a", "AZ2" : "ap-southeast-1b"},
+            "ap-southeast-2": {"AZ1" : "ap-southeast-2a", "AZ2" : "ap-southeast-2b"},
+            "ap-northeast-1": {"AZ1" : "ap-northeast-1a", "AZ2" : "ap-northeast-1b"},
+            "sa-east-1"     : {"AZ1" : "sa-east-1a", "AZ2" : "sa-east-1b"}
+        }
+    },
+
+    "Resources" : {
+
+        "ReplicaSetMember1" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" : {
+                "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MongoReplica.cftemplate",
+                "Parameters" : {
+                    "KeyName" : { "Ref" : "KeyName" },
+                    "InstanceType" : { "Ref" : "InstanceType" },
+                    "VolumeSize" : { "Ref" : "VolumeSize" },
+                    "AccessKeyId" : { "Ref" : "AccessKey" },
+                    "SecretAccessKey" : {"Fn::GetAtt": ["AccessKey", "SecretAccessKey"]},
+                    "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
+                    "ServerName" : { "FN::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
+                    "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
+                    "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] }
+                }
+            }
+        },
+
+        "ReplicaSetMember2" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "Properties" : {
+                "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MongoReplica.cftemplate",
+                "Parameters" : {
+                    "KeyName" : { "Ref" : "KeyName" },
+                    "InstanceType" : { "Ref" : "InstanceType" },
+                    "VolumeSize" : { "Ref" : "VolumeSize" },
+                    "AccessKeyId" : { "Ref" : "AccessKey" },
+                    "SecretAccessKey" : {"Fn::GetAtt": ["AccessKey", "SecretAccessKey"]},
+                    "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
+                    "ServerName" : { "FN::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
+                    "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
+                    "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ3"] }
+                }
+            }
+        },
+
+        "ReplicaSetPrimary1" : {
+            "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn": [
+                 "ReplicaSetMember1",
+                 "ReplicaSetMember2",
+            ],
+            "Properties" : {
+                "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MongoPrimary.cftemplate",
+                "Parameters" : {
+                    "KeyName" : { "Ref" : "KeyName" },
+                    "InstanceType" : { "Ref" : "InstanceType" },
+                    "VolumeSize" : { "Ref" : "VolumeSize" },
+                    "AccessKeyId" : { "Ref" : "AccessKey" },
+                    "SecretAccessKey" : {"Fn::GetAtt": ["AccessKey", "SecretAccessKey"]},
+                    "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
+                    "ServerName" : { "FN::Join": ["", [{"Ref" : "ReplicaSetName" },"Primary1"]]},
+                    "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
+                    "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ3"] }
+                }
+            }
+        },
+
+        "WaitConditionP1" : {
+            "Type" : "AWS::CloudFormation::WaitCondition",
+            "DependsOn" : "ReplicaSetPrimary1",
+            "Properties" : {
+                "Handle" : { "Ref" : "WaitHandleP1" },
+                "Timeout" : "600"
+            }
+        }
+    },
+
+    "Outputs" : {
+        "ReplicaSetMemberName1" : {
+            "Value" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "PublicDnsName" ] },
+            "Description" : "Public DNS name of the MongoDB Replica Set endpoint (node 1 : PRIMARY)"
+        },
+        "ReplicaSetMemberName2" : {
+            "Value" : { "Fn::GetAtt" : [ "ReplicaSetMember1", "Outputs.ReplicaSetMemberName" ] },
+            "Description" : "Public DNS name of the MongoDB Replica Set node 2"
+        },
+        "ReplicaSetMemberName3" : {
+            "Value" : { "Fn::GetAtt" : [ "ReplicaSetMember2", "Outputs.ReplicaSetMemberName" ] },
+            "Description" : "Public DNS name of the MongoDB Replica Set node 3"
+        }
+    }
+}
