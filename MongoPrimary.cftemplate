@@ -24,6 +24,8 @@
         "VolumeSize" : {
             "Description" : "Volume size for each EBS volume",
             "Type" : "Number",
+            "MinValue" : "1",
+            "MaxValue" : "1000",
             "Default" : "10"
         },
 
@@ -37,17 +39,9 @@
         "IopsPerVolume" : {
             "Description" : "Provisioned IOps Per Volume EBS volume (ignored for standard volumes)",
             "Type" : "Number",
+            "MinValue" : "1",
+            "MaxValue" : "2000",
             "Default" : "200"
-        },
-
-        "AccessKeyId" : {
-            "Description" : "Access Key ID",
-            "Type" : "String"
-        },
-
-        "SecretAccessKey" : {
-            "Description" : "Secret Access Key for the specified Access Key ID",
-            "Type" : "String"
         },
 
         "ReplicaSetName" : {
@@ -117,6 +111,28 @@
     },
 
     "Resources" : {
+        "CfnUser" : {
+            "Type" : "AWS::IAM::User",
+            "Properties" : {
+                "Path": "/",
+                "Policies": [ {
+                    "PolicyName": "root",
+                    "PolicyDocument": { "Statement": [ {
+                        "Effect":"Allow",
+                        "Action":"cloudformation:DescribeStackResource",
+                        "Resource":"*"
+                    } ] }
+                } ]
+            }
+        },
+
+        "AccessKey" : {
+            "Type" : "AWS::IAM::AccessKey",
+            "Properties" : {
+                "UserName" : { "Ref" : "CfnUser" }
+            }
+        },
+
 
         "ReplicaSetPrimary1" : {
             "Type" : "AWS::EC2::Instance",
@@ -132,12 +148,13 @@
                             }
                         },
                         "files" : {
-                            "/etc/yum.repos.d/10gen.repo" : {
+                            "/etc/yum.repos.d/mongodb.repo" : {
                                 "content" : { "Fn::Join" : ["", [
-                                    "[10gen]\n",
-                                    "name=10gen Repository\n",
+                                    "[mongodb]\n",
+                                    "name=MongoDB Repository\n",
                                     "baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64\n",
-                                    "gpgcheck=0\n"
+                                    "gpgcheck=0\n",
+                                    "enabled=1\n"
                                 ] ] },
                                 "mode" : "000644",
                                 "owner" : "root",
@@ -203,8 +220,8 @@
                 "}\n",
                 "# CloudFormation: Initialize\n",
                 "/opt/aws/bin/cfn-init -v -s ", { "Ref" : "AWS::StackName" }, " -r ReplicaSetPrimary1",
-                "   --access-key ",  { "Ref" : "AccessKeyId" },
-                "   --secret-key ", {"Ref": "SecretAccessKey"},
+                "   --access-key ",  { "Ref" : "AccessKey" },
+                "   --secret-key ", { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
                 "   --region ", { "Ref" : "AWS::Region" }, " > /tmp/cfn-init.log 2>&1 || error_exit $(</tmp/cfn-init.log)\n",
                 "# CLNGS UserData Start\n",
                 "#\n",
@@ -256,7 +273,7 @@
                 "# Updating RPMs and Installing MongoDB\n",
                 "#\n",
                 "yum update -y\n",
-                "yum install mongo-10gen-server -y\n",
+                "yum install mongodb-org-server -y\n",
                 "#\n",
                 "# Create MongoDB config\n",
                 "#\n",

@@ -24,17 +24,24 @@
         "VolumeSize" : {
             "Description" : "Volume size for each EBS volume",
             "Type" : "Number",
+            "MinValue" : "1",
+            "MaxValue" : "1000",
             "Default" : "10"
         },
 
-        "AccessKeyId" : {
-            "Description" : "Access Key ID",
-            "Type" : "String"
+        "VolumeType" : {
+            "Description" : "EBS Volume type (Standard or Provisioned)",
+            "AllowedValues": ["Standard","Provisioned"],
+            "Type" : "String",
+            "Default" : "Provisioned"
         },
 
-        "SecretAccessKey" : {
-            "Description" : "Secret Access Key for the specified Access Key ID",
-            "Type" : "String"
+        "IopsPerVolume" : {
+            "Description" : "Provisioned IOps Per Volume EBS volume (ignored for standard volumes)",
+            "Type" : "Number",
+            "MinValue" : "1",
+            "MaxValue" : "2000",
+            "Default" : "200"
         },
 
         "ReplicaSetName" : {
@@ -81,6 +88,28 @@
 
     "Resources" : {
 
+        "CfnUser" : {
+            "Type" : "AWS::IAM::User",
+            "Properties" : {
+                "Path": "/",
+                "Policies": [ {
+                    "PolicyName": "root",
+                    "PolicyDocument": { "Statement": [ {
+                        "Effect":"Allow",
+                        "Action":"cloudformation:DescribeStackResource",
+                        "Resource":"*"
+                    } ] }
+                } ]
+            }
+        },
+
+        "AccessKey" : {
+            "Type" : "AWS::IAM::AccessKey",
+            "Properties" : {
+                "UserName" : { "Ref" : "CfnUser" }
+            }
+        },
+
         "ReplicaSetMemberInstance" : {
             "Type" : "AWS::EC2::Instance",
             "Metadata" : {
@@ -95,12 +124,13 @@
                             }
                         },
                         "files" : {
-                            "/etc/yum.repos.d/10gen.repo" : {
+                            "/etc/yum.repos.d/mongodb.repo" : {
                                 "content" : { "Fn::Join" : ["", [
-                                    "[10gen]\n",
-                                    "name=10gen Repository\n",
+                                    "[mongodb]\n",
+                                    "name=MongoDB Repository\n",
                                     "baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64\n",
-                                    "gpgcheck=0\n"
+                                    "gpgcheck=0\n",
+                                    "enabled=1\n"
                                 ] ] },
                                 "mode" : "000644",
                                 "owner" : "root",
@@ -164,8 +194,8 @@
                 "}\n",
                 "## Initialize CloudFormation bits\n",
                 "/opt/aws/bin/cfn-init -v -s ", { "Ref" : "AWS::StackName" }, " -r ReplicaSetMemberInstance",
-                "   --access-key ",  { "Ref" : "AccessKeyId" },
-                "   --secret-key ", {"Ref": "SecretAccessKey" },
+                "   --access-key ",  { "Ref" : "AccessKey" },
+                "   --secret-key ", { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
                 "   --region ", { "Ref" : "AWS::Region" }, " > /tmp/cfn-init.log 2>&1 || error_exit $(</tmp/cfn-init.log)\n",
                 "#\n",
                 "## Variables\n",
@@ -218,7 +248,7 @@
                 "## Updating RPMs and Installing MongoDB\n",
                 "#\n",
                 "yum update -y\n",
-                "yum install mongo-10gen-server -y\n",
+                "yum install mongodb-org-server -y\n",
                 "#\n",
                 "## Create MongoDB config\n",
                 "#\n",
@@ -252,6 +282,8 @@
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
                  "Tags" : [{ "Key" : "Name", "Value" : "MongoVolume" }],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
             }
@@ -261,6 +293,8 @@
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
                 "Tags" : [{ "Key" : "Name", "Value" : "MongoVolume" }],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
             }
@@ -270,6 +304,8 @@
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
                 "Tags" : [{ "Key" : "Name", "Value" : "MongoVolume" }],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
             }
@@ -279,6 +315,8 @@
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
                 "Tags" : [{ "Key" : "Name", "Value" : "MongoVolume" }],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
             }

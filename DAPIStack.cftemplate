@@ -61,6 +61,8 @@
         "VolumeSize" : {
             "Description" : "Volume size for each EBS volume",
             "Type" : "Number",
+            "MinValue" : "1",
+            "MaxValue" : "1000",
             "Default" : "10"
         },
 
@@ -74,6 +76,8 @@
         "IopsPerVolume" : {
             "Description" : "Provisioned IOps Per Volume EBS volume (ignored for standard volumes)",
             "Type" : "Number",
+            "MinValue" : "1",
+            "MaxValue" : "2000",
             "Default" : "200"
         },
 
@@ -212,28 +216,6 @@
             }
         },
 
-        "CfnUser" : {
-            "Type" : "AWS::IAM::User",
-            "Properties" : {
-                "Path": "/",
-                "Policies": [ {
-                    "PolicyName": "root",
-                    "PolicyDocument": { "Statement": [ {
-                        "Effect":"Allow",
-                        "Action":"cloudformation:DescribeStackResource",
-                        "Resource":"*"
-                    } ] }
-                } ]
-            }
-        },
-
-        "AccessKey" : {
-            "Type" : "AWS::IAM::AccessKey",
-            "Properties" : {
-                "UserName" : { "Ref" : "CfnUser" }
-            }
-        },
-
         "MongoStack" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
@@ -245,8 +227,6 @@
                     "VolumeSize"          : { "Ref" : "VolumeSize" },
                     "VolumeType"          : { "Ref" : "VolumeType" },
                     "IopsPerVolume"       : { "Ref" : "IopsPerVolume" },
-                    "AccessKeyId"         : { "Ref" : "AccessKey" },
-                    "SecretAccessKey"     : { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
                     "ReplicaSetName"      : { "Ref" : "ReplicaSetName" },
                     "SecurityGroupName"   : { "Ref" : "MongoSG" },
                     "DAPITemplates"       : { "Ref" : "DAPITemplates" }
@@ -262,8 +242,6 @@
                     "KeyName"             : { "Ref" : "KeyName" },
                     "ClusterName"          : { "FN::Join": ["", [{"Ref" : "ClusterName" },"MessageService"]]},
                     "InstanceType"        : { "Ref" : "InstanceType" },
-                    "AccessKeyId"         : { "Ref" : "AccessKey" },
-                    "SecretAccessKey"     : { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
                     "SecurityGroupName"   : { "Ref" : "MessageServiceSG" },
                     "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
                     "DAPIUser"            : { "Ref" : "DAPIUser" },

@@ -1,7 +1,7 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
 
-    "Description" : "MongoDB Replica Node 20130621-01",
+    "Description" : "MessageService Node 20130621-01",
 
     "Parameters" : {
         "KeyName" : {
@@ -22,18 +22,8 @@
             "Description" : "EC2 instance type (e.g. m3.large, m3.xlarge, m3.xlarge)"
         },
 
-        "AccessKeyId" : {
-            "Description" : "Access Key ID",
-            "Type" : "String"
-        },
-
-        "SecretAccessKey" : {
-            "Description" : "Secret Access Key for the specified Access Key ID",
-            "Type" : "String"
-        },
-
         "SecurityGroupName" : {
-            "Description" : "MongoDB replica set security group name",
+            "Description" : "MessageService security group name",
             "Type" : "String"
         },
 
@@ -92,6 +82,27 @@
     },
 
     "Resources" : {
+        "CfnUser" : {
+            "Type" : "AWS::IAM::User",
+            "Properties" : {
+                "Path": "/",
+                "Policies": [ {
+                    "PolicyName": "root",
+                    "PolicyDocument": { "Statement": [ {
+                        "Effect":"Allow",
+                        "Action":"cloudformation:DescribeStackResource",
+                        "Resource":"*"
+                    } ] }
+                } ]
+            }
+        },
+
+        "AccessKey" : {
+            "Type" : "AWS::IAM::AccessKey",
+            "Properties" : {
+                "UserName" : { "Ref" : "CfnUser" }
+            }
+        },
 
         "MessageServiceInstance" : {
             "Type" : "AWS::EC2::Instance",
@@ -118,7 +129,7 @@
                                 "owner" : "root",
                                 "group" : "root"
                             },
-                            "/etc/flume/conf/flume.conf" : {
+                            "/etc/flume-ng/conf/flume.conf" : {
                                 "content" : { "Fn::Join" : ["", [
                                     "# Tell agent1 which ones we want to activate.\n",
                                     "agent1.channels = bin-channel json-channel\n",
@@ -178,11 +189,14 @@
                                     "#File Format SequenceFile, DataStream or CompressedStream\n",
                                     "#(1)DataStream will not comress\n",
                                     "#(2)CompressedStream requires hdfs.codeC set\n",
-                                    "agent1.sinks.s3Sink.hdfs.fileType = DataStream\n",
+                                    "agent1.sinks.s3Sink.hdfs.fileType = CompressedStream\n",
+                                    "agent1.sinks.s3Sink.hdfs.minBlockReplicas = 1\n",
+                                    "agent1.sinks.s3Sink.hdfs.codeC = gzip\n",
+                                    "\n",
                                     "#HDFS Write Format Text or Writable(default)\n",
                                     "agent1.sinks.s3Sink.hdfs.writeFormat = Text\n",
                                     "agent1.sinks.s3Sink.hdfs.path = s3n://",
-                                    { "Ref" : "AccessKeyId" },":",{"Ref": "SecretAccessKey" },
+                                    { "Ref" : "AccessKey" },":", { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
                                     "@dapi-workoutsnapshots/%Y-%m-%d/%H%M\n",
                                     "#Make S3 files in 15 minute buckets\n",
                                     "# Should the timestamp be rounded down (if true, affects all time based escape sequences except %t)\n",
@@ -197,7 +211,8 @@
                                     "agent1.sinks.mongo-sink.host = mongo-test\n",
                                     "agent1.sinks.mongo-sink.port = 27017\n",
                                     "agent1.sinks.mongo-sink.model = single\n",
-                                    "agent1.sinks.mongo-sink.collection = TestCollection\n",
+                                    "agent1.sinks.mongo-sink.db = dapi\n",
+                                    "agent1.sinks.mongo-sink.collection = workout_snapshots\n",
                                     "agent1.sinks.mongo-sink.batch = 100\n",
                                     "agent1.sinks.mongo-sink.channel = json-channel\n"
                                 ] ] },
@@ -246,8 +261,8 @@
 
                     "## Initialize CloudFormation bits\n",
                     "/opt/aws/bin/cfn-init -v -s ", { "Ref" : "AWS::StackName" }, " -r MessageServiceInstance",
-                    "   --access-key ",  { "Ref" : "AccessKeyId" },
-                    "   --secret-key ", {"Ref": "SecretAccessKey" },
+                    "   --access-key ",  { "Ref" : "AccessKey" },
+                    "   --secret-key ", { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] },
                     "   --region ", { "Ref" : "AWS::Region" }, " > /tmp/cfn-init.log 2>&1 || error_exit $(</tmp/cfn-init.log)\n",
                     "#\n",
 

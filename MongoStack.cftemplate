@@ -15,16 +15,6 @@
             "Default" : "MessageService"
         },
 
-        "AccessKeyId" : {
-            "Description" : "Access Key ID",
-            "Type" : "String"
-        },
-
-        "SecretAccessKey" : {
-            "Description" : "Secret Access Key for the specified Access Key ID",
-            "Type" : "String"
-        },
-
         "InstanceType" : {
             "Type" : "String",
             "Default" : "m1.large",
@@ -35,6 +25,8 @@
         "VolumeSize" : {
             "Description" : "Volume size for each EBS volume",
             "Type" : "Number",
+            "MinValue" : "1",
+            "MaxValue" : "1000",
             "Default" : "10"
         },
 
@@ -48,6 +40,8 @@
         "IopsPerVolume" : {
             "Description" : "Provisioned IOps Per Volume EBS volume (ignored for standard volumes)",
             "Type" : "Number",
+            "MinValue" : "1",
+            "MaxValue" : "2000",
             "Default" : "200"
         },
 
@@ -119,8 +113,6 @@
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
                     "VolumeSize" : { "Ref" : "VolumeSize" },
-                    "AccessKeyId"         : { "Ref" : "AccessKeyId" },
-                    "SecretAccessKey"     : { "Ref" : "SecretAccessKey" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
                     "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
                     "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
@@ -137,8 +129,6 @@
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
                     "VolumeSize" : { "Ref" : "VolumeSize" },
-                    "AccessKeyId"         : { "Ref" : "AccessKeyId" },
-                    "SecretAccessKey"     : { "Ref" : "SecretAccessKey" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
                     "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
                     "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
@@ -159,8 +149,6 @@
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
                     "VolumeSize" : { "Ref" : "VolumeSize" },
-                    "AccessKeyId"         : { "Ref" : "AccessKeyId" },
-                    "SecretAccessKey"     : { "Ref" : "SecretAccessKey" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
                     "ReplicaSetMember1" : { "Fn::GetAtt" : ["ReplicaSetMember1", "Outputs.ReplicaSetMemberName"] },
                     "ReplicaSetMember2" : { "Fn::GetAtt" : ["ReplicaSetMember2", "Outputs.ReplicaSetMemberName"] },

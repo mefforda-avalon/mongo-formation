@@ -15,16 +15,6 @@
             "Default": "MessageService"
         },
 
-        "AccessKeyId" : {
-            "Description" : "Access Key ID",
-            "Type" : "String"
-        },
-
-        "SecretAccessKey" : {
-            "Description" : "Secret Access Key for the specified Access Key ID",
-            "Type" : "String"
-        },
-
         "InstanceType" : {
             "Type" : "String",
             "Default" : "m1.large",
@@ -114,8 +104,6 @@
                     "ServerName"          : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Node1"]]},
                     "InstanceType"        : { "Ref" : "InstanceType" },
                     "InstanceZone"        : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] },
-                    "AccessKeyId"         : { "Ref" : "AccessKeyId" },
-                    "SecretAccessKey"     : { "Ref" : "SecretAccessKey" },
                     "SecurityGroupName"   : { "Ref" : "SecurityGroupName" },
                     "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
                     "DAPIUser"            : { "Ref" : "DAPIUser" },
@@ -134,8 +122,6 @@
                     "ServerName"          : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Node2"]]},
                     "InstanceType"        : { "Ref" : "InstanceType" },
                     "InstanceZone"        : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ2"] },
-                    "AccessKeyId"         : { "Ref" : "AccessKeyId" },
-                    "SecretAccessKey"     : { "Ref" : "SecretAccessKey" },
                     "SecurityGroupName"   : { "Ref" : "SecurityGroupName" },
                     "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
                     "DAPIUser"            : { "Ref" : "DAPIUser" },
