@@ -17,9 +17,9 @@
 
         "InstanceType" : {
             "Type" : "String",
-            "Default" : "m1.large",
-            "AllowedValues" : [ "m1.small", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "c1.xlarge", "cc1.4xlarge" ],
-            "Description" : "EC2 instance type (e.g.: m1.large, m1.xlarge, m2.xlarge)"
+            "Default" : "m3.xlarge",
+            "AllowedValues" : [ "m3.large", "m3.xlarge", "m3.xlarge", "m3.2xlarge", "m3.4xlarge", "c1.xlarge", "cc1.4xlarge" ],
+            "Description" : "EC2 instance type (e.g. m3.large, m3.xlarge, m3.xlarge)"
         },
 
         "VolumeSize" : {
@@ -38,9 +38,9 @@
         },
 
         "IopsPerVolume" : {
-            "Description" : "Provisioned IOps Per Volume EBS volume (ignored for standard volumes)",
+            "Description" : "Provisioned IOps Per Volume EBS volume (100-2000) (ignored for standard volumes)",
             "Type" : "Number",
-            "MinValue" : "1",
+            "MinValue" : "100",
             "MaxValue" : "2000",
             "Default" : "200"
         },
@@ -51,23 +51,20 @@
             "Default" : "ReplicaSet"
         },
 
-        "SecurityGroupName" : {
-            "Description" : "Name for the Security Group for this MongoDB Replica Set",
-            "Type" : "String"
+        "SecurityGroupId" : {
+            "Description" : "Security group id (sg-3d31fc58)",
+            "Type" : "String",
+            "Default" : "sg-3d31fc58"
         },
 
         "DAPITemplates" : {
             "Description" : "S3 Bucket containing the DAPI CloudFormation Templates",
             "Type" : "String",
-            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/"
+            "Default" : "dapi-template"
         }
     },
 
     "Mappings" : {
-        "VolumeTypeKeys" : {
-            "Standard":     { "Key": "standard"},
-            "Provisioned":  { "Key": "io1"}
-        },
         "InstanceTypeArch" : {
             "m1.medium"   : { "Arch" : "64" },
             "m1.large"    : { "Arch" : "64" },
@@ -94,7 +91,7 @@
         "RegionZone" : {
             "us-east-1"     : {"AZ1" : "us-east-1a", "AZ2" : "us-east-1b", "AZ3" : "us-east-1b", "AZ4" : "us-east-1d", "AZ5" : "us-east-1e"},
             "us-west-1"     : {"AZ1" : "us-west-1a", "AZ2" : "us-west-1b", "AZ3" : "us-west-1c"},
-            "us-west-2"     : {"AZ1" : "us-west-2a", "AZ2" : "us-west-2b"},
+            "us-west-2"     : {"AZ1" : "us-west-2a", "AZ2" : "us-west-2b", "AZ3" : "us-west-2c"},
             "eu-west-1"     : {"AZ1" : "eu-west-1a", "AZ2" : "eu-west-1b", "AZ3" : "eu-west-1c"},
             "ap-southeast-1": {"AZ1" : "ap-southeast-1a", "AZ2" : "ap-southeast-1b"},
             "ap-southeast-2": {"AZ1" : "ap-southeast-2a", "AZ2" : "ap-southeast-2b"},
@@ -108,14 +105,15 @@
         "ReplicaSetMember1" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL": { "Fn::Join": ["", [{"Ref" : "DAPITemplates" },"MongoReplica.cftemplate"]]},
+                "TemplateURL": { "Fn::Join": ["", ["http://" , { "Ref" : "DAPITemplates" }, ".s3.amazonaws.com/MongoReplica.cftemplate"]]},
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
                     "VolumeSize" : { "Ref" : "VolumeSize" },
+                    "IopsPerVolume" : { "Ref" : "IopsPerVolume" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
                     "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
-                    "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
+                    "SecurityGroupId" : { "Ref" : "SecurityGroupId" },
                     "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] }
                 }
             }
@@ -124,14 +122,15 @@
         "ReplicaSetMember2" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL": { "Fn::Join": ["", [{"Ref" : "DAPITemplates" },"MongoReplica.cftemplate"]]},
+                "TemplateURL": { "Fn::Join": ["", ["http://" , { "Ref" : "DAPITemplates" }, ".s3.amazonaws.com/MongoReplica.cftemplate"]]},
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
                     "VolumeSize" : { "Ref" : "VolumeSize" },
+                    "IopsPerVolume" : { "Ref" : "IopsPerVolume" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
                     "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
-                    "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
+                    "SecurityGroupId" : { "Ref" : "SecurityGroupId" },
                     "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ3"] }
                 }
             }
@@ -144,16 +143,17 @@
                  "ReplicaSetMember2"
             ],
             "Properties" : {
-                "TemplateURL": { "Fn::Join": ["", [{"Ref" : "DAPITemplates" },"MongoPrimary.cftemplate"]]},
+                "TemplateURL": { "Fn::Join": ["", ["http://" , { "Ref" : "DAPITemplates" }, ".s3.amazonaws.com/MongoPrimary.cftemplate"]]},
                 "Parameters" : {
                     "KeyName" : { "Ref" : "KeyName" },
                     "InstanceType" : { "Ref" : "InstanceType" },
                     "VolumeSize" : { "Ref" : "VolumeSize" },
+                    "IopsPerVolume" : { "Ref" : "IopsPerVolume" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
                     "ReplicaSetMember1" : { "Fn::GetAtt" : ["ReplicaSetMember1", "Outputs.ReplicaSetMemberName"] },
                     "ReplicaSetMember2" : { "Fn::GetAtt" : ["ReplicaSetMember2", "Outputs.ReplicaSetMemberName"] },
                     "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Primary1"]]},
-                    "SecurityGroupName" : { "Ref" : "SecurityGroupName" },
+                    "SecurityGroupId" : { "Ref" : "SecurityGroupId" },
                     "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ3"] }
                 }
             }
@@ -162,7 +162,7 @@
 
     "Outputs" : {
         "ReplicaSetMemberName1" : {
-            "Value" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "Outputs.PublicDnsName" ] },
+            "Value" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "Outputs.ReplicaSetMemberName" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set endpoint (node 1 : PRIMARY)"
         },
         "ReplicaSetMemberName2" : {

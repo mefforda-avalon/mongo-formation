@@ -1,7 +1,7 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
 
-    "Description" : "MongoDB Replica Set Stack 20140521-01",
+    "Description" : "Message Service Stack 20140603-01",
 
     "Parameters" : {
         "KeyName" : {
@@ -17,14 +17,21 @@
 
         "InstanceType" : {
             "Type" : "String",
-            "Default" : "m1.large",
-            "AllowedValues" : [ "m1.small", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "c1.xlarge", "cc1.4xlarge" ],
-            "Description" : "EC2 instance type (e.g.: m1.large, m1.xlarge, m2.xlarge)"
+            "Description" : "EC2 instance type (e.g. m3.large, m3.xlarge, m3.xlarge)",
+            "Default" : "m3.medium",
+            "AllowedValues" : [ "m3.medium", "m3.large", "m3.xlarge", "m3.xlarge", "m3.2xlarge", "m3.4xlarge", "c1.xlarge", "cc1.4xlarge" ]
         },
 
-        "SecurityGroupName" : {
-            "Description" : "MongoDB replica set security group name",
-            "Type" : "String"
+        "SecurityGroupId" : {
+            "Description" : "Security group id (sg-3d31fc58)",
+            "Type" : "String",
+            "Default" : "sg-3d31fc58"
+        },
+
+        "VpcId" : {
+            "Description" : "Network VPC Id (vpc-3c035757)",
+            "Type" : "String",
+            "Default" : "vpc-3c035757"
         },
 
         "NodeJSVersion" : {
@@ -52,7 +59,36 @@
         "DAPITemplates" : {
             "Description" : "S3 Bucket containing the DAPI CloudFormation Templates",
             "Type" : "String",
-            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/"
+            "Default" : "dapi-template"
+        },
+
+        "S3BucketName" : {
+            "Description" : "Primary Mongo Host name",
+            "Type" : "String",
+            "Default" : "dapi-workoutsnapshots"
+        },
+
+        "MongoDbName" : {
+            "Description" : "Mongo Database Name",
+            "Type" : "String",
+            "Default" : "dapi"
+        },
+
+        "SnapshotCollection" : {
+            "Description" : "Mongo Workout Snapshot Collection Name",
+            "Type" : "String",
+            "Default" : "workout_snapshots"
+        },
+
+        "BinaryMessageCollection" : {
+            "Description" : "Mongo Binary Message Collection Name",
+            "Type" : "String",
+            "Default" : "dapi_raw"
+        },
+
+        "MongoHost" : {
+            "Description" : "Primary Mongo Host name",
+            "Type" : "String"
         }
 
     },
@@ -98,17 +134,22 @@
         "MessageServiceNode1" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL": { "Fn::Join": ["", [{"Ref" : "DAPITemplates" },"MessageServiceNode.cftemplate"]]},
+                "TemplateURL": { "Fn::Join": ["", ["http://" , { "Ref" : "DAPITemplates" }, ".s3.amazonaws.com/MessageServiceNode.cftemplate"]]},
                 "Parameters" : {
-                    "KeyName"             : { "Ref" : "KeyName" },
-                    "ServerName"          : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Node1"]]},
-                    "InstanceType"        : { "Ref" : "InstanceType" },
-                    "InstanceZone"        : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] },
-                    "SecurityGroupName"   : { "Ref" : "SecurityGroupName" },
-                    "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
-                    "DAPIUser"            : { "Ref" : "DAPIUser" },
-                    "GitHubSshPublicKey"  : { "Ref" : "GitHubSshPublicKey" },
-                    "GitHubSshPrivateKey" : { "Ref" : "GitHubSshPrivateKey" }
+                    "KeyName"                    : { "Ref" : "KeyName" },
+                    "ServerName"                 : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Node1"]]},
+                    "InstanceType"               : { "Ref" : "InstanceType" },
+                    "InstanceZone"               : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] },
+                    "SecurityGroupId"            : { "Ref" : "SecurityGroupId" },
+                    "NodeJSVersion"              : { "Ref" : "NodeJSVersion" },
+                    "DAPIUser"                   : { "Ref" : "DAPIUser" },
+                    "GitHubSshPublicKey"         : { "Ref" : "GitHubSshPublicKey" },
+                    "GitHubSshPrivateKey"        : { "Ref" : "GitHubSshPrivateKey" },
+                    "S3BucketName"               : { "Ref" : "S3BucketName" },
+                    "MongoDbName"                : { "Ref" : "MongoDbName" },
+                    "SnapshotCollection"         : { "Ref" : "SnapshotCollection" },
+                    "BinaryMessageCollection"    : { "Ref" : "BinaryMessageCollection" },
+                    "MongoHost"                  : { "Ref" : "MongoHost" }
                 }
             }
         },
@@ -116,18 +157,51 @@
         "MessageServiceNode2" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL" : "https://s3-eu-west-1.amazonaws.com/mongodb-clngs/MessageServiceNode.cftemplate",
+                "TemplateURL": { "Fn::Join": ["", ["http://" , { "Ref" : "DAPITemplates" }, ".s3.amazonaws.com/MessageServiceNode.cftemplate"]]},
                 "Parameters" : {
-                    "KeyName"             : { "Ref" : "KeyName" },
-                    "ServerName"          : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Node2"]]},
-                    "InstanceType"        : { "Ref" : "InstanceType" },
-                    "InstanceZone"        : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ2"] },
-                    "SecurityGroupName"   : { "Ref" : "SecurityGroupName" },
-                    "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
-                    "DAPIUser"            : { "Ref" : "DAPIUser" },
-                    "GitHubSshPublicKey"  : { "Ref" : "GitHubSshPublicKey" },
-                    "GitHubSshPrivateKey" : { "Ref" : "GitHubSshPrivateKey" }
+                    "KeyName"                    : { "Ref" : "KeyName" },
+                    "ServerName"                 : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Node2"]]},
+                    "InstanceType"               : { "Ref" : "InstanceType" },
+                    "InstanceZone"               : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ2"] },
+                    "SecurityGroupId"            : { "Ref" : "SecurityGroupId" },
+                    "NodeJSVersion"              : { "Ref" : "NodeJSVersion" },
+                    "DAPIUser"                   : { "Ref" : "DAPIUser" },
+                    "GitHubSshPublicKey"         : { "Ref" : "GitHubSshPublicKey" },
+                    "GitHubSshPrivateKey"        : { "Ref" : "GitHubSshPrivateKey" },
+                    "S3BucketName"               : { "Ref" : "S3BucketName" },
+                    "MongoDbName"                : { "Ref" : "MongoDbName" },
+                    "SnapshotCollection"  : { "Ref" : "SnapshotCollection" },
+                    "BinaryMessageCollection"    : { "Ref" : "BinaryMessageCollection" },
+                    "MongoHost"                  : { "Ref" : "MongoHost" }
                 }
+            }
+        },
+        "ElasticLoadBalancer": {
+            "DependsOn": [
+                 "MessageServiceNode1",
+                 "MessageServiceNode2"
+            ],
+            "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+            "Properties": {
+                "AvailabilityZones" : { "Fn::GetAZs" : "" },
+                "HealthCheck": {
+                    "Target": "HTTP:8000/health",
+                    "HealthyThreshold": "3",
+                    "UnhealthyThreshold": "5",
+                    "Interval": "10",
+                    "Timeout": "5"
+                },
+                "Instances": [
+                    { "Fn::GetAtt" : ["MessageServiceNode1", "Outputs.MessageServiceId" ]},
+                    { "Fn::GetAtt" : ["MessageServiceNode2", "Outputs.MessageServiceId" ]}
+                ],
+                "Listeners": [
+                    {
+                        "LoadBalancerPort": "8000",
+                        "InstancePort": "8000",
+                        "Protocol": "HTTP"
+                    }
+                ]
             }
         }
     },
@@ -140,6 +214,18 @@
         "MessageService2" : {
             "Value" : { "Fn::GetAtt" : [ "MessageServiceNode2", "Outputs.MessageServiceName" ] },
             "Description" : "Public DNS name of the MessageService2 endpoint (node 2)"
+        },
+        "CanonicalHostedZoneName" : {
+            "Value" : { "Fn::GetAtt" : [ "ElasticLoadBalancer", "CanonicalHostedZoneName" ] },
+            "Description" : "The name of the Amazon Route 53 hosted zone that is associated with the load balancer."
+        },
+        "CanonicalHostedZoneNameID" : {
+            "Value" : { "Fn::GetAtt" : [ "ElasticLoadBalancer", "CanonicalHostedZoneNameID" ] },
+            "Description" : "The ID of the Amazon Route 53 hosted zone that is associated with the load balancer."
+        },
+        "LoadBalancerDNSName" : {
+            "Value" : { "Fn::GetAtt" : [ "ElasticLoadBalancer", "DNSName" ] },
+            "Description" : "The DNS name for the load balancer."
         }
     }
 }

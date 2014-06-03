@@ -21,16 +21,6 @@
             "Default" : "ReplicaSet1"
         },
 
-        "ClientIpAddress" : {
-            "Description" : "IP accessing SSH and MongoDB ports (in CIDR format, e.g.: 126.23.2.1/24)",
-            "Type" :"String",
-            "MinLength":"9",
-            "MaxLength":"18",
-            "AllowedPattern":"^(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})/(\\d{1,2})$",
-            "ConstraintDescription":"Must be a valid IP in CIDR notation .",
-            "Default" :"0.0.0.0/32"
-        },
-
         "FrontEndIpAddress" : {
             "Description" : "IP allowed access DAPI-MessageService ports (in CIDR format, e.g.: 126.23.2.1/24)",
             "Type" :"String",
@@ -38,7 +28,7 @@
             "MaxLength":"18",
             "AllowedPattern":"^(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})/(\\d{1,2})$",
             "ConstraintDescription":"Must be a valid IP in CIDR notation .",
-            "Default" :"0.0.0.0/32"
+            "Default" :"0.0.0.0/0"
         },
 
         "SshIpAddress" : {
@@ -48,18 +38,31 @@
             "MaxLength":"18",
             "AllowedPattern":"^(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})/(\\d{1,2})$",
             "ConstraintDescription":"Must be a valid IP in CIDR notation .",
-            "Default" :"0.0.0.0/32"
+            "Default" :"0.0.0.0/0"
+        },
+        
+        "VpcId" : {
+            "Description" : "Network VPC Id (vpc-3c035757)",
+            "Type" : "String",
+            "Default" : "vpc-3c035757"
         },
 
-        "InstanceType" : {
+        "NodeInstanceType" : {
             "Type" : "String",
-            "Default" : "m1.large",
-            "AllowedValues" : [ "m1.small", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "c1.xlarge", "cc1.4xlarge" ],
-            "Description" : "EC2 instance type (e.g.: m1.large, m1.xlarge, m2.xlarge)"
+            "Description" : "EC2 instance type (e.g. m3.large, m3.xlarge, m3.xlarge)",
+            "Default" : "m3.medium",
+            "AllowedValues" : [ "m3.medium", "m3.large", "m3.xlarge", "m3.xlarge", "m3.2xlarge", "m3.4xlarge", "c1.xlarge", "cc1.4xlarge" ]
+        },
+
+        "MongoInstanceType" : {
+            "Type" : "String",
+            "Description" : "EC2 instance type (e.g. m3.large, m3.xlarge, m3.xlarge)",
+            "Default" : "m3.xlarge",
+            "AllowedValues" : [ "m3.large", "m3.xlarge", "m3.xlarge", "m3.2xlarge", "m3.4xlarge", "c1.xlarge", "cc1.4xlarge" ]
         },
 
         "VolumeSize" : {
-            "Description" : "Volume size for each EBS volume",
+            "Description" : "Volume size for each Mongo EBS volume",
             "Type" : "Number",
             "MinValue" : "1",
             "MaxValue" : "1000",
@@ -74,11 +77,23 @@
         },
 
         "IopsPerVolume" : {
-            "Description" : "Provisioned IOps Per Volume EBS volume (ignored for standard volumes)",
+            "Description" : "Provisioned IOps Per Volume EBS volume (100-2000) (ignored for standard volumes)",
             "Type" : "Number",
-            "MinValue" : "1",
+            "MinValue" : "100",
             "MaxValue" : "2000",
             "Default" : "200"
+        },
+
+        "VpcId" : {
+            "Description" : "Network VPC Id (vpc-3c035757)",
+            "Type" : "String",
+            "Default" : "vpc-3c035757"
+        },
+
+        "NodeJSVersion" : {
+            "Description" : "NodeJS Version",
+            "Type" : "String",
+            "Default" : "0.10.28"
         },
 
         "DAPIUser" : {
@@ -100,8 +115,33 @@
         "DAPITemplates" : {
             "Description" : "S3 Bucket containing the DAPI CloudFormation Templates",
             "Type" : "String",
-            "Default" : "https://s3-us-west-2.amazonaws.com/dapi-template/"
+            "Default" : "dapi-template"
+        },
+
+        "S3BucketName" : {
+            "Description" : "Primary Mongo Host name",
+            "Type" : "String",
+            "Default" : "dapi-workoutsnapshots"
+        },
+
+        "MongoDbName" : {
+            "Description" : "Mongo Database Name",
+            "Type" : "String",
+            "Default" : "dapi"
+        },
+
+        "SnapshotCollection" : {
+            "Description" : "Mongo Workout Snapshot Collection Name",
+            "Type" : "String",
+            "Default" : "workout_snapshots"
+        },
+
+        "BinaryMessageCollection" : {
+            "Description" : "Mongo Binary Message Collection Name",
+            "Type" : "String",
+            "Default" : "dapi_raw"
         }
+
     },
 
     "Mappings" : {
@@ -153,7 +193,7 @@
                 "SecurityGroupIngress" : [
                         {
                             "IpProtocol" : "tcp", "FromPort" : "8000", "ToPort" : "8000",
-                            "SourceSecurityGroupId" : { "Ref": "FrontEndIpAddress" }
+                            "CidrIp" : { "Ref": "FrontEndIpAddress" }
                         },
                         {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref": "SshIpAddress" } }
                 ]
@@ -170,7 +210,7 @@
                 "SecurityGroupIngress" : [
                         {
                             "IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80",
-                            "SourceSecurityGroupId" : { "Ref": "MessageServiceSG" }
+                            "SourceSecurityGroupId" : { "Fn::GetAtt" : [ "MessageServiceSG", "GroupId" ] }
                         },
                         {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref": "SshIpAddress" } }
                 ]
@@ -188,14 +228,13 @@
                 "SecurityGroupIngress" : [
                         {
                             "IpProtocol" : "tcp", "FromPort" : "27017", "ToPort" : "27017",
-                            "SourceSecurityGroupId" : { "Ref": "MessageServiceSG" }
+                            "SourceSecurityGroupId" : { "Fn::GetAtt" : [ "MessageServiceSG", "GroupId" ] }
                         },
                         {
                             "IpProtocol" : "tcp", "FromPort" : "27017", "ToPort" : "27017",
-                            "SourceSecurityGroupId" : { "Ref": "DataServiceSG" }
+                            "SourceSecurityGroupId" : { "Fn::GetAtt" : [ "DataServiceSG", "GroupId" ] }
                         },
-                        {"IpProtocol" : "tcp", "FromPort" : "28017", "ToPort" : "28017", "CidrIp" : { "Ref": "ClientIpAddress" } },
-                        {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref": "ClientIpAddress" } }
+                        {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref": "SshIpAddress" } }
                 ]
             }
         },
@@ -219,16 +258,16 @@
         "MongoStack" : {
             "Type" : "AWS::CloudFormation::Stack",
             "Properties" : {
-                "TemplateURL": { "FN::Join": ["", [{"Ref" : "DAPITemplates" },"MongoStack.cftemplate"]] },
+                "TemplateURL": { "Fn::Join": ["", ["http://" , { "Ref" : "DAPITemplates" }, ".s3.amazonaws.com/MongoStack.cftemplate"]]},
                 "Parameters" : {
                     "KeyName"             : { "Ref" : "KeyName" },
-                    "InstanceType"        : { "Ref" : "InstanceType" },
-                    "ClusterName"         : { "FN::Join": ["", [{"Ref" : "ClusterName" },"Mongo", { "Ref" : "ReplicaSetName" } ]] },
+                    "InstanceType"        : { "Ref" : "MongoInstanceType" },
+                    "ClusterName"         : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Mongo", { "Ref" : "ReplicaSetName" } ]] },
                     "VolumeSize"          : { "Ref" : "VolumeSize" },
                     "VolumeType"          : { "Ref" : "VolumeType" },
                     "IopsPerVolume"       : { "Ref" : "IopsPerVolume" },
                     "ReplicaSetName"      : { "Ref" : "ReplicaSetName" },
-                    "SecurityGroupName"   : { "Ref" : "MongoSG" },
+                    "SecurityGroupId"     : { "Fn::GetAtt" : [ "MongoSG", "GroupId" ] },
                     "DAPITemplates"       : { "Ref" : "DAPITemplates" }
                 }
             }
@@ -236,48 +275,42 @@
 
         "MessageServiceStack" : {
             "Type" : "AWS::CloudFormation::Stack",
+            "DependsOn" : [
+                "MongoStack"
+            ],
             "Properties" : {
-                "TemplateURL": { "FN::Join": ["", [{"Ref" : "DAPITemplates" },"MessageServiceStack.cftemplate"]]},
+                "TemplateURL": { "Fn::Join": ["", ["http://" , { "Ref" : "DAPITemplates" }, ".s3.amazonaws.com/MessageServiceStack.cftemplate"]]},
                 "Parameters" : {
-                    "KeyName"             : { "Ref" : "KeyName" },
-                    "ClusterName"          : { "FN::Join": ["", [{"Ref" : "ClusterName" },"MessageService"]]},
-                    "InstanceType"        : { "Ref" : "InstanceType" },
-                    "SecurityGroupName"   : { "Ref" : "MessageServiceSG" },
-                    "NodeJSVersion"       : { "Ref" : "NodeJSVersion" },
-                    "DAPIUser"            : { "Ref" : "DAPIUser" },
-                    "GitHubSshPublicKey"  : { "Ref" : "GitHubSshPublicKey" },
-                    "GitHubSshPrivateKey" : { "Ref" : "GitHubSshPrivateKey" },
-                    "DAPITemplates"       : { "Ref" : "DAPITemplates" }
+                    "KeyName"                    : { "Ref" : "KeyName" },
+                    "ClusterName"                : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"MessageService"]]},
+                    "InstanceType"               : { "Ref" : "NodeInstanceType" },
+                    "SecurityGroupId"            : { "Fn::GetAtt" : [ "MessageServiceSG", "GroupId" ] },
+                    "NodeJSVersion"              : { "Ref" : "NodeJSVersion" },
+                    "DAPIUser"                   : { "Ref" : "DAPIUser" },
+                    "GitHubSshPublicKey"         : { "Ref" : "GitHubSshPublicKey" },
+                    "GitHubSshPrivateKey"        : { "Ref" : "GitHubSshPrivateKey" },
+                    "DAPITemplates"              : { "Ref" : "DAPITemplates" },
+                    "S3BucketName"               : { "Ref" : "S3BucketName" },
+                    "MongoDbName"                : { "Ref" : "MongoDbName" },
+                    "SnapshotCollection"         : { "Ref" : "SnapshotCollection" },
+                    "BinaryMessageCollection"    : { "Ref" : "BinaryMessageCollection" },
+                    "MongoHost"                  : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetMemberName1" ] }
                 }
-            }
-        },
-
-        "WaitHandleP1" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-
-        "WaitConditionP1" : {
-            "Type" : "AWS::CloudFormation::WaitCondition",
-            "DependsOn" : "MongoInstanceP1",
-            "Properties" : {
-                "Handle" : { "Ref" : "WaitHandleP1" },
-                "Timeout" : "600"
             }
         }
     },
 
     "Outputs" : {
         "ReplicaSetMemberName1" : {
-            "Value" : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetPrimary1" ] },
+            "Value" : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetMemberName1" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set endpoint (node 1 : PRIMARY)"
         },
         "ReplicaSetMemberName2" : {
-            "Value" : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetMember1" ] },
+            "Value" : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetMemberName2" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set node 2"
         },
         "ReplicaSetMemberName3" : {
-            "Value" : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetMember2" ] },
+            "Value" : { "Fn::GetAtt" : [ "MongoStack", "Outputs.ReplicaSetMemberName3" ] },
             "Description" : "Public DNS name of the MongoDB Replica Set node 3"
         },
         "MessageServiceName1" : {
@@ -287,6 +320,18 @@
         "MessageServiceName1" : {
             "Value" : { "Fn::GetAtt" : [ "MessageServiceStack", "Outputs.MessageService2" ] },
             "Description" : "Public DNS name of the MessageService Node 2"
+        },
+        "CanonicalHostedZoneName" : {
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceStack", "Outputs.CanonicalHostedZoneName" ] },
+            "Description" : "The name of the Amazon Route 53 hosted zone that is associated with the load balancer."
+        },
+        "CanonicalHostedZoneNameID" : {
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceStack", "Outputs.CanonicalHostedZoneNameID" ] },
+            "Description" : "The ID of the Amazon Route 53 hosted zone that is associated with the load balancer."
+        },
+        "LoadBalancerDNSName" : {
+            "Value" : { "Fn::GetAtt" : [ "MessageServiceStack", "Outputs.LoadBalancerDNSName" ] },
+            "Description" : "The DNS name for the load balancer."
         }
     }
 }
