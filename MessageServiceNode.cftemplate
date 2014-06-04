@@ -6,7 +6,8 @@
     "Parameters" : {
         "KeyName" : {
             "Description" : "Name of an existing EC2 KeyPair to enable SSH access",
-            "Type" : "String"
+            "Type" : "String",
+            "Default" : "avalon-jht"
         },
 
         "ServerName" : {
@@ -26,6 +27,12 @@
             "Description" : "MessageService security group id (sg-3d31fc58)",
             "Type" : "String",
             "Default" : "sg-3d31fc58"
+        },
+
+        "MessageServiceGroup" : {
+            "Description" : "MessageService User security group",
+            "Type" : "String",
+            "Default" : "MessageServiceGroup"
         },
 
         "NodeJSVersion" : {
@@ -82,7 +89,8 @@
 
         "MongoHost" : {
             "Description" : "Primary Mongo Host name",
-            "Type" : "String"
+            "Type" : "String",
+            "Default" : "mongo-test"
         },
 
         "InstanceZone" : {
@@ -142,6 +150,7 @@
             "Type" : "AWS::IAM::User",
             "Properties" : {
                 "Path": "/",
+                "Groups": [ { "Ref" : "MessageServiceGroup" } ],
                 "Policies": [ {
                     "PolicyName": "root",
                     "PolicyDocument": { "Statement": [ {
@@ -159,50 +168,29 @@
                 "UserName" : { "Ref" : "CfnUser" }
             }
         },
-        "TemplateS3Policy" : {
-            "Type" : "AWS::S3::BucketPolicy",
-            "Properties" : {
-                "Bucket" : { "Ref" : "DAPITemplates" },
-                "PolicyDocument" : {
-                    "Id" : "TemplateS3Policy",
-                    "Version": "2012-10-17",
-                    "Statement" : [ {
-                        "Sid" : "AllAccess",
-                        "Effect" : "Allow",
-                        "Action" : [ "s3:GetObject" ],
-                        "Resource" : { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref" : "DAPITemplates" } , "/*" ] ] },
-                        "Principal" : { "AWS": { "Fn::GetAtt" : [ "CfnUser", "Arn" ] } }
-                    } ]
-                }
-            }
-        },
-        "WorkoutSnapshotS3Policy" : {
-            "Type" : "AWS::S3::BucketPolicy",
-            "Properties" : {
-                "Bucket" : { "Ref" : "S3BucketName" },
-                "PolicyDocument" : {
-                    "Id" : "WorkoutSnapshotS3Policy",
-                    "Version": "2012-10-17",
-                    "Statement" : [ {
-                        "Sid" : "AllAccess",
-                        "Effect" : "Allow",
-                        "Action" : [ "s3:*" ],
-                        "Resource" : { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref" : "S3BucketName" } , "/*" ] ] },
-                        "Principal" : { "AWS": { "Fn::GetAtt" : [ "CfnUser", "Arn" ] } }
-                    } ]
-                }
-            }
-        },
 
         "MessageServiceInstance" : {
             "Type" : "AWS::EC2::Instance",
             "DependsOn": [
-                "TemplateS3Policy",
-                "WorkoutSnapshotS3Policy"
+                "CfnUser",
+                "AccessKey"
             ],
             "Metadata" : {
+                "AWS::CloudFormation::Authentication": {
+                    "s3creds": {
+                        "type": "S3",
+                        "buckets":      [ { "Ref": "S3BucketName" }, { "Ref": "DAPITemplates"} ],
+                        "accessKeyId" : { "Ref" : "AccessKey" },
+                        "secretKey":    { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] }
+                    }
+                },
                 "AWS::CloudFormation::Init" : {
                     "config" : {
+                        "services" : {
+                            "sysvinit" : {
+                                "ntpd"    : { "enabled" : "true", "ensureRunning" : "true" }
+                             }
+                        },
                         "packages" : {
                             "yum" : {
                                 "sysstat" : [],
@@ -221,10 +209,39 @@
                                 "python-devel" : [],
                                 "openssl-devel" : [],
                                 "ruby-devel" : [],
-                                "lua-devel" : []
+                                "lua-devel" : [],
+                                "java-1.7.0-openjdk-devel" : []
                             }
                         },
                         "files" : {
+                            "/etc/yum.repos.d/mongodb.repo" : {
+                                "content" : { "Fn::Join" : ["", [
+                                    "[mongodb]\n",
+                                    "name=MongoDB Repository\n",
+                                    "baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64\n",
+                                    "gpgcheck=0\n",
+                                    "enabled=1\n"
+                                ] ] },
+                                "mode" : "000644",
+                                "owner" : "root",
+                                "group" : "root"
+                            },
+                            "/etc/profile.d/maven.sh": {
+                                "content" : { "Fn::Join" : ["", [
+                                    "#!/bin/sh\n",
+                                    "export M2_HOME=/usr/local/maven\n",
+                                    "export PATH=${M2_HOME}/bin:${PATH}\n"
+                                ] ] },
+                                "mode"   : "000644",
+                                "owner"  : "root",
+                                "group"  : "root"
+                            },
+                            "/tmp/message-service.diff": {
+                                "source" : { "Fn::Join" : ["", ["http://" , { "Ref" : "DAPITemplates" }, ".s3.amazonaws.com/message-service.diff"]]},
+                                "mode"   : "000400",
+                                "owner"  : "root",
+                                "group"  : "root"
+                            },
                             "/usr/local/src/thrift-20aeba3.tar.gz": {
                                 "source" : { "Fn::Join" : ["", ["http://" , { "Ref" : "DAPITemplates" }, ".s3.amazonaws.com/thrift-20aeba3.tgz"]]},
                                 "mode"   : "000400",
@@ -355,20 +372,7 @@
                                 "owner" : "root",
                                 "group" : "root"
                             }
-                        },
-                        "services" : {
-                            "sysvinit" : {
-                                "ntpd"    : { "enabled" : "true", "ensureRunning" : "true" }
-                             }
                         }
-                    }
-                },
-                "AWS::CloudFormation::Authentication": {
-                    "s3creds": {
-                        "type": "S3",
-                        "buckets": [ { "Ref": "S3BucketName" } ],
-                        "accessKeyId" : { "Ref" : "AccessKey" },
-                        "secretKey":    { "Fn::GetAtt": ["AccessKey", "SecretAccessKey"] }
                     }
                 }
             },
@@ -390,8 +394,14 @@
                 "SecurityGroupIds" : [ { "Ref" : "SecurityGroupId" } ],
                 "KeyName" : { "Ref" : "KeyName" },
                 "AvailabilityZone" : {"Ref" : "InstanceZone" },
+                "BlockDeviceMappings" : [
+                    { "DeviceName"  : "/dev/sdc1", "VirtualName" : "ephemeral0" },
+                    { "DeviceName"  : "/dev/sdc2", "VirtualName" : "ephemeral1" },
+                    { "DeviceName"  : "/dev/sdc3", "VirtualName" : "ephemeral2" },
+                    { "DeviceName"  : "/dev/sdc4", "VirtualName" : "ephemeral3" }
+                ],
                 "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
-                    "#!/bin/bash\n",
+                    "#!/bin/bash -ex\n",
                     "#\n",
 
                     "# Sending all output to /tmp/install.log\n",
@@ -410,6 +420,7 @@
                     "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WaitHandleMessageServiceInstance" }, "'\n",
                     "  exit 1\n",
                     "}\n",
+                    "\n",
 
                     "## Initialize CloudFormation bits\n",
                     "/opt/aws/bin/cfn-init -v -s ", { "Ref" : "AWS::StackName" }, " -r MessageServiceInstance",
@@ -418,26 +429,33 @@
                     "   --region ", { "Ref" : "AWS::Region" }, " > /tmp/cfn-init.log 2>&1 || error_exit $(</tmp/cfn-init.log)\n",
                     "#\n",
                     "/opt/aws/bin/cfn-signal -e 0 -r \"Initialization Started\" '", { "Ref" : "WaitHandleInit" }, "'\n",
-
-
+                    "\n",
 
                     "## Updating RPMs and Installing Apps\n",
-                    "## Update RPMs\n",
+                    "echo Update RPMs\n",
                     "#\n",
                     "yum update -y\n",
                     "#\n",
                     "/opt/aws/bin/cfn-signal -e 0 -r \"RPMs Updated\" '", { "Ref" : "WaitHandleRPMs" }, "'\n",
+                    "\n",
+                    "echo Update RPMs\n",
+                    "yum update -y\n",
 
-                    "#Fixing the SSH Private Key from above\n",
+                    "echo 'Fixing the SSH Private Key for github'\n",
                     "while [ ! -f '/root/.ssh/jht-github' ]; do sleep 1; done\n",
                     "perl -i -pe 's{((?:\\S{40}|-----|==)) }{$1\\n}g' /root/.ssh/jht-github\n",
                     "#\n",
                     "/opt/aws/bin/cfn-signal -e 0 -r \"Git SSH Key Fixed\" '", { "Ref" : "WaitHandleFixSSH" }, "'\n",
+                    "\n",
+
+                    "echo Update RPMs\n",
+                    "yum update -y\n",
+                    "#\n",
 
                     "## Install Node.JS\n",
                     "#yum install nodejs -enablerepo=epel -y\n",
                     "cd /usr/local/src\n",
-                    "wget http://nodejs.org/dist/v",{"Ref": "NodeJSVersion"},"/node-v",{"Ref": "NodeJSVersion"},"-linux-x64.tar.gz\n",
+                    "wget -nv http://nodejs.org/dist/v",{"Ref": "NodeJSVersion"},"/node-v",{"Ref": "NodeJSVersion"},"-linux-x64.tar.gz\n",
                     "tar -xzf node-v",{"Ref": "NodeJSVersion"},"-linux-x64.tar.gz\n",
                     "cd node-v",{"Ref": "NodeJSVersion"},"-linux-x64\n",
                     "mv include/node /usr/local/include/\n",
@@ -445,19 +463,48 @@
                     "mv share/man/man1/node.1 /usr/local/share/man/man1/\n",
                     "mv bin/* /usr/local/bin/\n",
                     "/opt/aws/bin/cfn-signal -e 0 -r \"NodeJS installed\" '", { "Ref" : "WaitHandleNodeJS" }, "'\n",
+                    "\n",
+
+                    "## Install Apache-Maven\n",
+                    "wget -nv http://mirrors.ibiblio.org/apache/maven/maven-3/3.2.1/binaries/apache-maven-3.2.1-bin.tar.gz\n",
+                    "tar -xzf apache-maven-3.2.1-bin.tar.gz\n",
+                    "mv apache-maven-3.2.1 /usr/local/\n",
+                    "ln -s /usr/local/apache-maven-3.2.1 /usr/local/maven\n",
+                    "/opt/aws/bin/cfn-signal -e 0 -r \"Apache-Maven installed\" '", { "Ref" : "WaitHandleMaven" }, "'\n",
+                    "\n",
 
                     "## Install Flume\n",
                     "cd /etc/yum.repos.d\n",
-                    "wget http://archive.cloudera.com/cdh4/redhat/6/x86_64/cdh/cloudera-cdh4.repo\n",
+                    "wget -nv http://archive.cloudera.com/cdh4/redhat/6/x86_64/cdh/cloudera-cdh4.repo\n",
                     "yum install flume-ng-agent -y\n",
+                    "/opt/aws/bin/cfn-signal -e 0 -r \"Flume-NG installed\" '", { "Ref" : "WaitHandleFlume" }, "'\n",
+                    "\n",
+
+                    "## Install MongoDB-java driver\n",
+                    "wget -nv http://central.maven.org/maven2/org/mongodb/mongo-java-driver/2.12.1/mongo-java-driver-2.12.1.jar\n",
+                    "cp mongo-java-driver-2.12.1.jar /usr/lib/flume-ng/lib/\n",
+                    "/opt/aws/bin/cfn-signal -e 0 -r \"MongoDB Java driver installed\" '", { "Ref" : "WaitHandleMongoJava" }, "'\n",
+                    "\n",
+
+                    "## Install Flume-NG-MongoDB-Sink\n",
+                    "git clone https://github.com/leonlee/flume-ng-mongodb-sink.git\n",
+                    "cd flume-ng-mongodb-sink/\n",
+                    "/usr/local/maven/bin/mvn package\n",
+                    "cp target/flume-ng-mongodb-sink-1.0.0.jar /usr/lib/flume-ng/lib/\n",
+                    "/opt/aws/bin/cfn-signal -e 0 -r \"Flume-NG-MongoDB-Sink installed\" '", { "Ref" : "WaitHandleFlumeMongoSink" }, "'\n",
+                    "\n",
+
                     "## Updating system config and starting Flume-NG-Agent\n",
-                    "mv /etc/flume-ng/conf.dist/* /etc/flume-ng/conf/\n",
+                    "for each in flume-conf.properties.template flume-env-sh.template log4j.properties;\n",
+                    "  do mv /etc/flume-ng/conf.dist/$each /etc/flume-ng/conf/;done\n",
                     "rm -rf /etc/flume-ng/conf.dist\n",
                     "cp /etc/flume-ng/conf/flume-env.sh.template /etc/flume-ng/conf/flume-env.sh\n",
+                    "perl -i -pe 's{^# (FLUME_AGENT_NAME)=agent}{$1=agent1}' /etc/default/flume-ng-agent\n",
                     "#\n",
                     "chkconfig flume-ng-agent on\n",
                     "service flume-ng-agent start\n",
-                    "/opt/aws/bin/cfn-signal -e 0 -r \"Flume-NG installed\" '", { "Ref" : "WaitHandleFlume" }, "'\n",
+                    "/opt/aws/bin/cfn-signal -e 0 -r \"Flume-NG installed\" '", { "Ref" : "WaitHandleStartFlume" }, "'\n",
+                    "\n",
 
                     "## Install Thrift from source\n",
                     "#A thrift that includes milestone THRIFT-2511\n",
@@ -465,7 +512,7 @@
                     "#\n",
                     "cd /usr/local/src\n",
                     "#git clone https://git-wip-us.apache.org/repos/asf/thrift.git\n",
-                    "#wget -O thrift-20aeba3.tar.gz",
+                    "#wget -nv -O thrift-20aeba3.tar.gz",
                     "#  https://git-wip-us.apache.org/repos/asf?p=thrift.git;a=snapshot;h=20aeba3e384f6590770dc3b4343e6d5dfcbd3ce1;sf=tgz\n",
                     "tar -xf thrift-20aeba3.tar.gz\n",
                     "cd thrift-20aeba3\n",
@@ -476,16 +523,18 @@
                     "#Install thrift Node.JS libs\n",
                     "cp -rp lib/nodejs/lib/thrift /usr/local/lib/node_modules/\n",
                     "/opt/aws/bin/cfn-signal -e 0 -r \"Thrift installed\" '", { "Ref" : "WaitHandleThrift" }, "'\n",
+                    "\n",
 
                     "## Install DAPI-MessageService\n",
 
                     "#Install mocha globally\n",
                     "#/usr/local/bin/npm install -g mocha\n",
                     "/opt/aws/bin/cfn-signal -e 0 -r \"Mocha installed\" '", { "Ref" : "WaitHandleMocha" }, "'\n",
+                    "\n",
 
                     "#Install jscoverage from source\n",
                     "cd /usr/local/src\n",
-                    "wget http://siliconforks.com/jscoverage/download/jscoverage-0.5.tar.bz2\n",
+                    "wget -nv http://siliconforks.com/jscoverage/download/jscoverage-0.5.tar.bz2\n",
                     "tar -xf jscoverage-0.5.tar.bz2\n",
                     "cd jscoverage-0.5\n",
                     "./configure\n",
@@ -493,6 +542,7 @@
                     "make install\n",
                     "\n",
                     "/opt/aws/bin/cfn-signal -e 0 -r \"jscoverage installed\" '", { "Ref" : "WaitHandleJSCoverage" }, "'\n",
+                    "\n",
 
                     "#Installing DAPI-MessageService from git\n",
                     "#The following instructions should be performed as the user you intend to use in operating the message service.\n",
@@ -505,6 +555,7 @@
                     "#but because of the issues with thrift that can't happen yet.\n",
                     "#/usr/local/bin/npm install\n",
                     "\n",
+
                     "#Installing flume-logger from git\n",
                     "#This is unfortunately more complex than it would otherwise be, because of the thrift complications.\n",
                     "#This process can be simplified once thrift versions are updated to include the TCompactProtocol\n",
@@ -518,48 +569,32 @@
                     "/usr/local/bin/npm install q\n",
                     "/usr/local/bin/npm install node-int64\n",
                     "chown -R ", { "Ref": "DAPIUser" }, ":", { "Ref": "DAPIUser" }, " /home/", { "Ref": "DAPIUser" }, "\n",
+                    "\n",
+                    "#Patch DAPI-MessageService\n",
+                    "#Remove when this is incorporated into the source tree\n",
+                    "cd /home/", { "Ref": "DAPIUser" }, "/DAPI-MessageService\n",
+                    "/usr/bin/patch -p1 < /tmp/message-service.diff\n",
+                    "\n",
+
                     "## CloudFormation signal that setup is complete\n",
                     "/opt/aws/bin/cfn-signal -e 0 -r \"MessageServiceInstance setup complete\" '", { "Ref" : "WaitHandleMessageServiceInstance" }, "'\n"
                 ]]}}
             }
         },
 
-        "WaitHandleInit" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-        "WaitHandleRPMs" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-        "WaitHandleFixSSH" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-        "WaitHandleNodeJS" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-        "WaitHandleFlume" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-        "WaitHandleThrift" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-        "WaitHandleMocha" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-        "WaitHandleJSCoverage" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
-        "WaitHandleMessageServiceInstance" : {
-            "Type" : "AWS::CloudFormation::WaitConditionHandle",
-            "Properties" : {}
-        },
+        "WaitHandleInit"                   : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleRPMs"                   : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleFixSSH"                 : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleNodeJS"                 : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleMaven"                  : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleFlume"                  : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleMongoJava"              : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleFlumeMongoSink"         : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleStartFlume"             : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleThrift"                 : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleMocha"                  : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleJSCoverage"             : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
+        "WaitHandleMessageServiceInstance" : { "Type" : "AWS::CloudFormation::WaitConditionHandle", "Properties" : {} },
 
         "WaitConditionStartInit" : {
             "Type" : "AWS::CloudFormation::WaitCondition",
@@ -593,17 +628,49 @@
                 "Timeout" : "600"
             }
         },
-        "WaitConditionInstallFlume" : {
+        "WaitConditionInstallMaven" : {
             "Type" : "AWS::CloudFormation::WaitCondition",
             "DependsOn" : "WaitConditionInstallNodeJS",
+            "Properties" : {
+                "Handle" : { "Ref" : "WaitHandleMaven" },
+                "Timeout" : "600"
+            }
+        },
+        "WaitConditionInstallFlume" : {
+            "Type" : "AWS::CloudFormation::WaitCondition",
+            "DependsOn" : "WaitConditionInstallMaven",
             "Properties" : {
                 "Handle" : { "Ref" : "WaitHandleFlume" },
                 "Timeout" : "600"
             }
         },
-        "WaitConditionInstallThrift" : {
+        "WaitConditionInstallMongoJava" : {
             "Type" : "AWS::CloudFormation::WaitCondition",
             "DependsOn" : "WaitConditionInstallFlume",
+            "Properties" : {
+                "Handle" : { "Ref" : "WaitHandleMongoJava" },
+                "Timeout" : "600"
+            }
+        },
+        "WaitConditionInstallFlumeMongoSink" : {
+            "Type" : "AWS::CloudFormation::WaitCondition",
+            "DependsOn" : "WaitConditionInstallMongoJava",
+            "Properties" : {
+                "Handle" : { "Ref" : "WaitHandleFlumeMongoSink" },
+                "Timeout" : "600"
+            }
+        },
+        "WaitConditionStartFlume" : {
+            "Type" : "AWS::CloudFormation::WaitCondition",
+            "DependsOn" : "WaitConditionInstallFlumeMongoSink",
+            "Properties" : {
+                "Handle" : { "Ref" : "WaitHandleStartFlume" },
+                "Timeout" : "600"
+            }
+        },
+        "WaitConditionInstallThrift" : {
+            "Type" : "AWS::CloudFormation::WaitCondition",
+            "DependsOn" : "WaitConditionStartFlume",
             "Properties" : {
                 "Handle" : { "Ref" : "WaitHandleThrift" },
                 "Timeout" : "1600"

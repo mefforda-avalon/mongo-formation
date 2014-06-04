@@ -51,7 +51,7 @@
         },
 
         "SecurityGroupId" : {
-            "Description" : "MessageService security group id (sg-3d31fc58)",
+            "Description" : "MongoDB security group id (sg-3d31fc58)",
             "Type" : "String",
             "Default" : "sg-3d31fc58"
         },

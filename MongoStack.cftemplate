@@ -10,9 +10,9 @@
         },
 
         "ClusterName" : {
-            "Description" :"Name of this MessageService Cluster",
+            "Description" :"Name of this Mongo Cluster (Prefix for all node names)",
             "Type" : "String",
-            "Default" : "MessageService"
+            "Default": ""
         },
 
         "InstanceType" : {
@@ -112,7 +112,7 @@
                     "VolumeSize" : { "Ref" : "VolumeSize" },
                     "IopsPerVolume" : { "Ref" : "IopsPerVolume" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
-                    "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
+                    "ServerName" : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Replica1"]]},
                     "SecurityGroupId" : { "Ref" : "SecurityGroupId" },
                     "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ1"] }
                 }
@@ -129,7 +129,7 @@
                     "VolumeSize" : { "Ref" : "VolumeSize" },
                     "IopsPerVolume" : { "Ref" : "IopsPerVolume" },
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
-                    "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Replica1"]]},
+                    "ServerName" : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Replica2"]]},
                     "SecurityGroupId" : { "Ref" : "SecurityGroupId" },
                     "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ3"] }
                 }
@@ -152,7 +152,7 @@
                     "ReplicaSetName" : { "Ref" : "ReplicaSetName" },
                     "ReplicaSetMember1" : { "Fn::GetAtt" : ["ReplicaSetMember1", "Outputs.ReplicaSetMemberName"] },
                     "ReplicaSetMember2" : { "Fn::GetAtt" : ["ReplicaSetMember2", "Outputs.ReplicaSetMemberName"] },
-                    "ServerName" : { "Fn::Join": ["", [{"Ref" : "ReplicaSetName" },"Primary1"]]},
+                    "ServerName" : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Primary1"]]},
                     "SecurityGroupId" : { "Ref" : "SecurityGroupId" },
                     "InstanceZone" : { "Fn::FindInMap" : ["RegionZone", { "Ref" : "AWS::Region"}, "AZ3"] }
                 }

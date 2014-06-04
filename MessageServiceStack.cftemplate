@@ -28,12 +28,6 @@
             "Default" : "sg-3d31fc58"
         },
 
-        "VpcId" : {
-            "Description" : "Network VPC Id (vpc-3c035757)",
-            "Type" : "String",
-            "Default" : "vpc-3c035757"
-        },
-
         "NodeJSVersion" : {
             "Description" : "NodeJS Version",
             "Type" : "String",
@@ -130,6 +124,44 @@
     },
 
     "Resources" : {
+        "MessageServiceGroup" : {
+            "Type" : "AWS::IAM::Group",
+            "Properties" : {
+                "Path" : "/"
+            }
+        },
+        "MessageServiceGroupPolicy" : {
+            "Type" : "AWS::IAM::Policy",
+            "Properties" : {
+                "PolicyName" : "MessageServiceGroupPolicy",
+                "PolicyDocument" : {
+                    "Version": "2012-10-17",
+                    "Statement" : [ 
+                        {
+                            "Effect" : "Allow",
+                            "Action" : [ "s3:*" ],
+                            "Resource" : { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref" : "S3BucketName" } ] ] }
+                        }, 
+                        {
+                            "Effect" : "Allow",
+                            "Action" : [ "s3:*" ],
+                            "Resource" : { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref" : "S3BucketName" } , "/*" ] ] }
+                        }, 
+                        {
+                            "Effect" : "Allow",
+                            "Action" : [ "s3:GetObject", "s3:ListBucket" ],
+                            "Resource" : { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref" : "DAPITemplates" } ] ] }
+                        }, 
+                        {
+                            "Effect" : "Allow",
+                            "Action" : [ "s3:GetObject", "s3:ListBucket" ],
+                            "Resource" : { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref" : "DAPITemplates" } ,"/*"] ] }
+                        } 
+                    ]
+                },
+                "Groups" : [ { "Ref" : "MessageServiceGroup" } ]
+            }
+        },
 
         "MessageServiceNode1" : {
             "Type" : "AWS::CloudFormation::Stack",
@@ -149,6 +181,7 @@
                     "MongoDbName"                : { "Ref" : "MongoDbName" },
                     "SnapshotCollection"         : { "Ref" : "SnapshotCollection" },
                     "BinaryMessageCollection"    : { "Ref" : "BinaryMessageCollection" },
+                    "MessageServiceGroup"        : { "Ref" : "MessageServiceGroup" },
                     "MongoHost"                  : { "Ref" : "MongoHost" }
                 }
             }
@@ -170,8 +203,9 @@
                     "GitHubSshPrivateKey"        : { "Ref" : "GitHubSshPrivateKey" },
                     "S3BucketName"               : { "Ref" : "S3BucketName" },
                     "MongoDbName"                : { "Ref" : "MongoDbName" },
-                    "SnapshotCollection"  : { "Ref" : "SnapshotCollection" },
+                    "SnapshotCollection"         : { "Ref" : "SnapshotCollection" },
                     "BinaryMessageCollection"    : { "Ref" : "BinaryMessageCollection" },
+                    "MessageServiceGroup"        : { "Ref" : "MessageServiceGroup" },
                     "MongoHost"                  : { "Ref" : "MongoHost" }
                 }
             }

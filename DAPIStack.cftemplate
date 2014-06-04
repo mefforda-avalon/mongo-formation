@@ -41,12 +41,6 @@
             "Default" :"0.0.0.0/0"
         },
         
-        "VpcId" : {
-            "Description" : "Network VPC Id (vpc-3c035757)",
-            "Type" : "String",
-            "Default" : "vpc-3c035757"
-        },
-
         "NodeInstanceType" : {
             "Type" : "String",
             "Description" : "EC2 instance type (e.g. m3.large, m3.xlarge, m3.xlarge)",
@@ -82,12 +76,6 @@
             "MinValue" : "100",
             "MaxValue" : "2000",
             "Default" : "200"
-        },
-
-        "VpcId" : {
-            "Description" : "Network VPC Id (vpc-3c035757)",
-            "Type" : "String",
-            "Default" : "vpc-3c035757"
         },
 
         "NodeJSVersion" : {
@@ -262,7 +250,7 @@
                 "Parameters" : {
                     "KeyName"             : { "Ref" : "KeyName" },
                     "InstanceType"        : { "Ref" : "MongoInstanceType" },
-                    "ClusterName"         : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Mongo", { "Ref" : "ReplicaSetName" } ]] },
+                    "ClusterName"         : { "Fn::Join": ["", [{"Ref" : "ClusterName" },"Mongo" ]] },
                     "VolumeSize"          : { "Ref" : "VolumeSize" },
                     "VolumeType"          : { "Ref" : "VolumeType" },
                     "IopsPerVolume"       : { "Ref" : "IopsPerVolume" },
