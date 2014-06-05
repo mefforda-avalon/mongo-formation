@@ -42,7 +42,7 @@
             "Type" : "Number",
             "MinValue" : "100",
             "MaxValue" : "2000",
-            "Default" : "200"
+            "Default" : "100"
         },
 
         "ReplicaSetName" : {
@@ -303,85 +303,246 @@
             }
         },
 
-        "MongoVolume1" : {
+        "MongoVolume1R1" : {
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
                 "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
                 "Iops": { "Ref": "IopsPerVolume" },
-                 "Tags" : [{ "Key" : "Name", "Value" : "MongoVolume" }],
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ { "Ref":"ServerName" }, "_V1" ]] }},
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetMemberInstance" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume1R1" }
+                ],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
             }
         },
 
-        "MongoVolume2" : {
+        "MongoVolume2R1" : {
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
                 "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
                 "Iops": { "Ref": "IopsPerVolume" },
-                "Tags" : [{ "Key" : "Name", "Value" : "MongoVolume" }],
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ { "Ref":"ServerName" }, "_V1" ]] }},
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetMemberInstance" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume2R1" }
+                ],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
             }
         },
 
-        "MongoVolume3" : {
+        "MongoVolume3R1" : {
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
                 "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
                 "Iops": { "Ref": "IopsPerVolume" },
-                "Tags" : [{ "Key" : "Name", "Value" : "MongoVolume" }],
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ { "Ref":"ServerName" }, "_V1" ]] }},
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetMemberInstance" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume3R1" }
+                ],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
             }
         },
 
-        "MongoVolume4" : {
+        "MongoVolume4R1" : {
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
                 "Size" : { "Ref" : "VolumeSize" },
                 "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
                 "Iops": { "Ref": "IopsPerVolume" },
-                "Tags" : [{ "Key" : "Name", "Value" : "MongoVolume" }],
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ { "Ref":"ServerName" }, "_V1" ]] }},
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetMemberInstance" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume4R1" }
+                ],
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
             }
         },
 
-        "MongoVolumeMount1" : {
+        "MongoVolume5R1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ { "Ref":"ServerName" }, "_V1" ]] }},
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetMemberInstance" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume5R1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolume6R1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ { "Ref":"ServerName" }, "_V1" ]] }},
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetMemberInstance" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume6R1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolume7R1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ { "Ref":"ServerName" }, "_V1" ]] }},
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetMemberInstance" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume7R1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolume8R1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ { "Ref":"ServerName" }, "_V1" ]] }},
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetMemberInstance" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume8R1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolume9R1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ { "Ref":"ServerName" }, "_V1" ]] }},
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetMemberInstance" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume9R1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolume10R1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : { "Fn::Join" : ["", [ { "Ref":"ServerName" }, "_V1" ]] }},
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetMemberInstance" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume10R1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetMemberInstance", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolumeMount1R1" : {
             "Type" : "AWS::EC2::VolumeAttachment",
             "Properties" : {
                 "InstanceId" : { "Ref" : "ReplicaSetMemberInstance" },
-                "VolumeId" : { "Ref" : "MongoVolume1" },
+                "VolumeId" : { "Ref" : "MongoVolume1R1" },
                 "Device" : "/dev/sdh1"
             }
         },
 
-        "MongoVolumeMount2" : {
+        "MongoVolumeMount2R1" : {
             "Type" : "AWS::EC2::VolumeAttachment",
             "Properties" : {
                 "InstanceId" : { "Ref" : "ReplicaSetMemberInstance" },
-                "VolumeId" : { "Ref" : "MongoVolume2" },
+                "VolumeId" : { "Ref" : "MongoVolume2R1" },
                 "Device" : "/dev/sdh2"
             }
         },
 
-        "MongoVolumeMount3" : {
+        "MongoVolumeMount3R1" : {
             "Type" : "AWS::EC2::VolumeAttachment",
             "Properties" : {
                 "InstanceId" : { "Ref" : "ReplicaSetMemberInstance" },
-                "VolumeId" : { "Ref" : "MongoVolume3" },
+                "VolumeId" : { "Ref" : "MongoVolume3R1" },
                 "Device" : "/dev/sdh3"
             }
         },
 
-        "MongoVolumeMount4" : {
+        "MongoVolumeMount4R1" : {
             "Type" : "AWS::EC2::VolumeAttachment",
             "Properties" : {
                 "InstanceId" : { "Ref" : "ReplicaSetMemberInstance" },
-                "VolumeId" : { "Ref" : "MongoVolume4" },
+                "VolumeId" : { "Ref" : "MongoVolume4R1" },
                 "Device" : "/dev/sdh4"
             }
         },
+
+        "MongoVolumeMount5R1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetMemberInstance" },
+                "VolumeId" : { "Ref" : "MongoVolume5R1" },
+                "Device" : "/dev/sdh5"
+            }
+        },
+
+        "MongoVolumeMount6R1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetMemberInstance" },
+                "VolumeId" : { "Ref" : "MongoVolume6R1" },
+                "Device" : "/dev/sdh6"
+            }
+        },
+
+        "MongoVolumeMount7R1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetMemberInstance" },
+                "VolumeId" : { "Ref" : "MongoVolume7R1" },
+                "Device" : "/dev/sdh7"
+            }
+        },
+
+        "MongoVolumeMount8R1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetMemberInstance" },
+                "VolumeId" : { "Ref" : "MongoVolume8R1" },
+                "Device" : "/dev/sdh8"
+            }
+        },
+
+        "MongoVolumeMount9R1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetMemberInstance" },
+                "VolumeId" : { "Ref" : "MongoVolume9R1" },
+                "Device" : "/dev/sdh9"
+            }
+        },
+
+        "MongoVolumeMount10R1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetMemberInstance" },
+                "VolumeId" : { "Ref" : "MongoVolume10R1" },
+                "Device" : "/dev/sdh10"
+            }
+        },
+
 
         "WaitHandleReplicaSetMember" : {
             "Type" : "AWS::CloudFormation::WaitConditionHandle",

@@ -260,7 +260,7 @@
                 "   --region ", { "Ref" : "AWS::Region" }, " > /tmp/cfn-init.log 2>&1 || error_exit $(</tmp/cfn-init.log)\n",
                 "# CLNGS UserData Start\n",
                 "#\n",
-                "RAIDMEMBERS=4\n",
+                "RAIDMEMBERS=10\n",
                 "# Wait until ALL EBS are connected\n",
                 "while [ \"$(ls /dev/sdh*|wc -l)\" -lt \"$RAIDMEMBERS\" ]; do sleep 1; done\n",
                 "#\n",
@@ -274,7 +274,7 @@
                 "PVS=($(pvscan | head -n -1 |awk '{print $2}'))\n",
                 "if [ ${#PVS[@]} -eq $RAIDMEMBERS ]; then echo \"Desired PVs ${#PVS[@]} Vs Ready $RAIDMEMBERS : Proceeding...\"; vgcreate vg0 ${PVS[@]}; else exit; fi\n",
                 "#\n",
-                "lvcreate -i 4 -I 256 -n mongo -l 100%FREE vg0\n",
+                "lvcreate -i 10 -I 256 -n mongo -l 100%FREE vg0\n",
                 "#\n",
                 "# Tuning read-ahead=ON\n",
                 "#\n",
@@ -404,6 +404,96 @@
             }
         },
 
+        "MongoVolume5P1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_5" },
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume5P1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolume6P1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_6" },
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume6P1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolume7P1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_7" },
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume7P1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolume8P1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_8" },
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume8P1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolume9P1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_9" },
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume9P1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "AvailabilityZone" ]}
+            }
+        },
+
+        "MongoVolume10P1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : { "Ref" : "VolumeSize" },
+                "VolumeType": {"Fn::FindInMap" : [ "VolumeTypeKeys", { "Ref" : "VolumeType" }, "Key" ]},
+                "Iops": { "Ref": "IopsPerVolume" },
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Mongo_P1_Volume_10" },
+                    { "Key" : "InstanceId", "Value" : "ReplicaSetPrimary1" },
+                    { "Key" : "VolumeId", "Value" : "MongoVolume10P1" }
+                ],
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "ReplicaSetPrimary1", "AvailabilityZone" ]}
+            }
+        },
+
         "MongoVolumeMount1P1" : {
             "Type" : "AWS::EC2::VolumeAttachment",
             "Properties" : {
@@ -437,6 +527,60 @@
                 "InstanceId" : { "Ref" : "ReplicaSetPrimary1" },
                 "VolumeId" : { "Ref" : "MongoVolume4P1" },
                 "Device" : "/dev/sdh4"
+            }
+        },
+
+        "MongoVolumeMount5P1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetPrimary1" },
+                "VolumeId" : { "Ref" : "MongoVolume5P1" },
+                "Device" : "/dev/sdh5"
+            }
+        },
+
+        "MongoVolumeMount6P1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetPrimary1" },
+                "VolumeId" : { "Ref" : "MongoVolume6P1" },
+                "Device" : "/dev/sdh6"
+            }
+        },
+
+        "MongoVolumeMount7P1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetPrimary1" },
+                "VolumeId" : { "Ref" : "MongoVolume7P1" },
+                "Device" : "/dev/sdh7"
+            }
+        },
+
+        "MongoVolumeMount8P1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetPrimary1" },
+                "VolumeId" : { "Ref" : "MongoVolume8P1" },
+                "Device" : "/dev/sdh8"
+            }
+        },
+
+        "MongoVolumeMount9P1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetPrimary1" },
+                "VolumeId" : { "Ref" : "MongoVolume9P1" },
+                "Device" : "/dev/sdh9"
+            }
+        },
+
+        "MongoVolumeMount10P1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "ReplicaSetPrimary1" },
+                "VolumeId" : { "Ref" : "MongoVolume10P1" },
+                "Device" : "/dev/sdh10"
             }
         },
 
