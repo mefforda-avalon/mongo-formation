@@ -401,7 +401,7 @@
                     { "DeviceName"  : "/dev/sdc4", "VirtualName" : "ephemeral3" }
                 ],
                 "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
-                    "#!/bin/bash -ex\n",
+                    "#!/bin/bash -x\n",
                     "#\n",
 
                     "# Sending all output to /tmp/install.log\n",
@@ -431,15 +431,6 @@
                     "/opt/aws/bin/cfn-signal -e 0 -r \"Initialization Started\" '", { "Ref" : "WaitHandleInit" }, "'\n",
                     "\n",
 
-                    "## Updating RPMs and Installing Apps\n",
-                    "echo Update RPMs\n",
-                    "#\n",
-                    "yum update -y\n",
-                    "#\n",
-                    "/opt/aws/bin/cfn-signal -e 0 -r \"RPMs Updated\" '", { "Ref" : "WaitHandleRPMs" }, "'\n",
-                    "\n",
-                    "echo Update RPMs\n",
-                    "yum update -y\n",
 
                     "echo 'Fixing the SSH Private Key for github'\n",
                     "while [ ! -f '/root/.ssh/jht-github' ]; do sleep 1; done\n",
@@ -448,9 +439,13 @@
                     "/opt/aws/bin/cfn-signal -e 0 -r \"Git SSH Key Fixed\" '", { "Ref" : "WaitHandleFixSSH" }, "'\n",
                     "\n",
 
+                    "## Updating RPMs and Installing Apps\n",
                     "echo Update RPMs\n",
+                    "#\n",
                     "yum update -y\n",
                     "#\n",
+                    "/opt/aws/bin/cfn-signal -e 0 -r \"RPMs Updated\" '", { "Ref" : "WaitHandleRPMs" }, "'\n",
+                    "\n",
 
                     "## Install Node.JS\n",
                     "#yum install nodejs -enablerepo=epel -y\n",
@@ -604,25 +599,25 @@
                 "Timeout" : "1600"
             }
         },
-        "WaitConditionUpdateRPMs" : {
-            "Type" : "AWS::CloudFormation::WaitCondition",
-            "DependsOn" : "WaitConditionStartInit",
-            "Properties" : {
-                "Handle" : { "Ref" : "WaitHandleRPMs" },
-                "Timeout" : "600"
-            }
-        },
         "WaitConditionFixSSH" : {
             "Type" : "AWS::CloudFormation::WaitCondition",
-            "DependsOn" : "WaitConditionUpdateRPMs",
+            "DependsOn" : "WaitConditionStartInit",
             "Properties" : {
                 "Handle" : { "Ref" : "WaitHandleFixSSH" },
                 "Timeout" : "600"
             }
         },
-        "WaitConditionInstallNodeJS" : {
+        "WaitConditionUpdateRPMs" : {
             "Type" : "AWS::CloudFormation::WaitCondition",
             "DependsOn" : "WaitConditionFixSSH",
+            "Properties" : {
+                "Handle" : { "Ref" : "WaitHandleRPMs" },
+                "Timeout" : "1200"
+            }
+        },
+        "WaitConditionInstallNodeJS" : {
+            "Type" : "AWS::CloudFormation::WaitCondition",
+            "DependsOn" : "WaitConditionUpdateRPMs",
             "Properties" : {
                 "Handle" : { "Ref" : "WaitHandleNodeJS" },
                 "Timeout" : "600"
