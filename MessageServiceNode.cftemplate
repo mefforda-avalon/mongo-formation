@@ -490,7 +490,7 @@
                     "\n",
 
                     "## Updating system config and starting Flume-NG-Agent\n",
-                    "for each in flume-conf.properties.template flume-env-sh.template log4j.properties;\n",
+                    "for each in flume-conf.properties.template flume-env.sh.template log4j.properties;\n",
                     "  do mv /etc/flume-ng/conf.dist/$each /etc/flume-ng/conf/;done\n",
                     "rm -rf /etc/flume-ng/conf.dist\n",
                     "cp /etc/flume-ng/conf/flume-env.sh.template /etc/flume-ng/conf/flume-env.sh\n",
